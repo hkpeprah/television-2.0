@@ -1,0 +1,70 @@
+*.py[cod]
+*.py~
+*~
+
+# C extensions
+*.so
+
+# Packages
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Libraries
+*.lib
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# LaTeX temporary files
+*.aux
+*.log
+*.toc
+*.out
+
+# Doxygen output
+html/
+latex/
+
+# Temporary Directories
+build
+
+# Vim temporary files
+*.swp
+
+# Emacs temporary files
+*~

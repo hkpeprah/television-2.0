@@ -1,4 +1,13 @@
-## Sources
-* Trak.it - http://docs.trakt.apiary.io/#introduction/standard-media-objects
-* TV DB - http://thetvdb.com/wiki/index.php?title=Programmers_API
-* Python TV DB API - https://github.com/dbr/tvdb_api/
+Television
+===========
+This API is powered by [TV Maze](http://www.tvmaze.com/api)
+
+## TV Maze
+The API endpoint for TV Maze is http://api.tvmaze.com, we care about the following endpoints:
+
+| Endpoint              |
+| --------------------  |
+| `schedule`            |
+| `shows/:id`           |
+| `shows/:id/episodes   |
+| `search/shows?q=query |

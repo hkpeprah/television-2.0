@@ -105,20 +105,19 @@ class CrunchyrollApi(object):
 
     def list_media(self, show_data, **kwargs):
         kwargs.setdefault('limit', self.MAX_SERIES)
-        kwargs.setdefault('sort', self.FILTER_NEWEST)
+        kwargs.setdefault('sort', self.FILTER_DESC)
         kwargs.setdefault('offset', 0)
         kwargs.setdefault('media_type', self.MEDIA_TYPE_ANIME)
-        kwargs.setdefault('filter', 'contains:{}'.format(show_data['name']))
+        kwargs.setdefault('filter', 'contains:' + show_data['name'])
         if 'series_id' in show_data:
             kwargs['series_id'] = show_data['series_id']
-        else:
+        elif 'collection_id' in show_data:
             kwargs['collection_id'] = show_data['collection_id']
         return self.get('list_media', kwargs)
 
     def get_latest_episodes(self, **kwargs):
         newest = self.get_newest()
-        media_limit = 10
-        kwargs['limit'] = media_limit
+        kwargs.setdefault('limit', 10)
         for new_series in newest:
             new_series['episodes'] = self.list_media(new_series, **kwargs)
         return newest

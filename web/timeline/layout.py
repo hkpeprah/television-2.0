@@ -1,5 +1,5 @@
 from base import ValidatableObject
-from fields import (ChoicesField, StringField)
+from fields import (ChoicesField, StringField, NumberField)
 from resources import (ICONS, COLOURS, LAYOUT_TYPES)
 
 
@@ -17,6 +17,7 @@ class Layout(ValidatableObject):
     largeIcon = ChoicesField(ICONS, required=False)
     foregroundColor = ChoicesField(COLOURS, required=False)
     backgroundColor = ChoicesField(COLOURS, required=False)
+    lastUpdated = NumberField(requird=False)
     headings = []
     paragraphs = []
 

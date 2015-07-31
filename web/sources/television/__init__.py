@@ -65,7 +65,7 @@ def list_latest_episodes_for_country(country, date):
             if show['description'] is not None:
                 show['description'] = re.sub('<[^>]*>', '', show['description'])
 
-            if 'image' in show_metadata:
+            if 'image' in show_metadata and show_metadata['image'] is not None:
                 show['image'] = show_metadata['image'].get('original', None)
 
             show['extra_data'] = { 'id': show_metadata.get('id', None) }
@@ -77,7 +77,7 @@ def list_latest_episodes_for_country(country, date):
 
             # We assume the type of show (e.g. 'Game Show') is also what would be
             # considered a genre.
-            if 'type' in show_metadata:
+            if 'type' in show_metadata and show_metadata['type'] is not None:
                 show['genres'].append(show_metadata['type'])
 
             # Update the episode with the show information

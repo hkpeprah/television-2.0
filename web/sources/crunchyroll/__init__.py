@@ -52,7 +52,11 @@ def list_latest_episodes(num_series=10):
             if not 'episode_number' in episode_metadata:
                 continue
 
-            episode['number'] = int(episode_metadata.get('episode_number'))
+            try:
+                episode['number'] = int(episode_metadata.get('episode_number'))
+            except ValueError:
+                continue
+
             episode['summary'] = episode_metadata.get('description', None)
             episode['time'] = date.strftime('%H:%M')
             episode['timestamp'] = datestring

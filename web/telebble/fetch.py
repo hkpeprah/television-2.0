@@ -24,7 +24,7 @@ def fetch_from_funimation():
         network.save()
 
     for series_data in series:
-        extra_data = series.get('extra_data', {})
+        extra_data = series_data.get('extra_data', {})
         _id = extra_data.get('series_id')
         query = models.Series.objects(source_id=_id, source_type=source_type)
         if query.first() is not None:
@@ -54,8 +54,9 @@ def fetch_from_funimation():
         series_id = extra_data.get('series_id')
 
         _id = extra_data.get('media_id')
-        query = models.Media.objects(source_id=_id, source_type=source_type)
-        media = query.first() if query.first() is not None else models.Media()
+        query = models.Media.objects(source_id=_id)
+        query = filter(lambda m: m.source_type == source_type, query)
+        media = query[0] if len(query) > 0 else models.Media()
 
         media.name = episode_data['name']
         media.summary = episode_data['summary']
@@ -63,13 +64,12 @@ def fetch_from_funimation():
         media.season = int(episode_data['season'])
         media.number = int(episode_data['number'])
         media.timestamp = episode_data['timestamp']
-        media.runtime = episode_data['runtime']
+        media._runtime = episode_data['runtime']
 
-        series = models.Series.objects(source_type=source_type, source-id=series_id).first()
+        series = models.Series.objects(source_type=source_type, source_id=series_id).first()
         media.series = series
 
         media.source_id = _id
-        media.source_type = source_type
         media.extra_data = extra_data
 
         media.save()
@@ -124,12 +124,13 @@ def fetch_from_crunchyroll():
         network.save()
 
     for episode_data in episodes:
-        extra_data = series_data.get('extra_data', {})
+        extra_data = episode_data.get('extra_data', {})
         series_id = extra_data.get('series_id')
 
         _id = extra_data.get('media_id')
-        query = models.Media.objects(source_id=_id, source_type=source_type)
-        if query.first() is not None:
+        media_objects = models.Media.objects(source_id=_id)
+        filtered_media_objects = filter(lambda m: m.source_type == source_type, media_objects)
+        if len(filtered_media_objects) > 0:
             continue
 
         media = models.Media()
@@ -139,16 +140,15 @@ def fetch_from_crunchyroll():
         media.image = episode_data['image'] or ''
         media.season = episode_data['season'] or 1
         media.number = episode_data['number']
-        media.timestamp = iso_to_timestamp(episode_data['timestamp'])
+        media.timestamp = utils.iso_to_timestamp(episode_data['timestamp'])
 
         if episode_data['runtime'] is not None:
-            media.runtime = episode_data['runtime']
+            media._runtime = episode_data['runtime']
 
         series = models.Series.objects(source_type=source_type, source_id=series_id).first()
         media.series = series
 
         media.source_id = _id
-        media.source_type = source_type
         media.extra_data = extra_data
 
         media.save()
@@ -200,7 +200,7 @@ def fetch_from_television(year, month, day):
             series.name = show_data['name'] or ''
             series.description = show_data['description']
             series.genres = show_data['genres']
-            series.image = show_data['image']
+            series.image = show_data.get('image', '')
             series.runtime = show_data['runtime']
 
             network_query = models.Network.objects(source_id=network_id, source_type=source_type)
@@ -223,34 +223,30 @@ def fetch_from_television(year, month, day):
             network_id = extra_data['network_id']
 
             episode_number = episode_data['number']
-
-            network = models.Network.objects(source_id=network_id, source_type=source_type).first()
-            series = models.Series.objects(source_id=series_id, source_type=source_type)
-            exists = False
-
-            for series in filter(lambda s: s.network == network, series):
-                media = filter(lambda m: m.number == episode_number, series.media)
-                if len(media) > 0:
-                    exists = True
-                    break
-
-            if exists:
+            if episode_number is None:
                 continue
 
-            series = series.first()
+            network = models.Network.objects(source_id=network_id, source_type=source_type).first()
+            series = models.Series.objects(source_id=series_id, source_type=source_type).first()
+            exists = False
+
+            media = filter(lambda m: m.number == episode_number, series.media)
+            if len(media) > 0:
+                continue
 
             media = models.Media()
 
             media.name = episode_data['name'] or ''
             media.summary = episode_data['summary']
-            media.image = episode_data['image'] || ''
-            media.season = episode_data['season'] || 1
+            media.image = episode_data['image'] or ''
+            media.season = episode_data['season'] or 1
             media.number = episode_number
-            media.timestamp = iso_to_timestamp(episode_data['timestamp'])
-            media.runtime = episode_data['runtime']
+            media.timestamp = utils.iso_to_timestamp(episode_data['timestamp'])
+
+            if episode_data['runtime'] is not None:
+                media._runtime = int(episode_data['runtime'])
 
             media.series = series
-
             media.extra_data = extra_data
 
             media.save()

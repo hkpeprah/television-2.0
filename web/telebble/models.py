@@ -88,7 +88,7 @@ class Media(Document):
     season = fields.IntField(required=False)
     number = fields.IntField(required=True)
     timestamp = fields.IntField(required=True)
-    runtime = fields.IntField(required=False)
+    _runtime = fields.IntField(required=False)
 
     # Back reference to the Series, should be added when the modal is created to prevent
     # additional query requests against the database.
@@ -97,7 +97,6 @@ class Media(Document):
     # We use this information to check for uniqueness and for possible queries for more
     # information about the series in particular.
     source_id = fields.IntField(required=False)
-    source_type = fields.StringField(choices=sources.DATA_SOURCES, required=False)
 
     # Extra data
     extra_data = fields.DictField(default={})
@@ -125,8 +124,8 @@ class Media(Document):
         says its media have.  We do this because sometimes a particular episode of a show
         may have a special with a different runtime than normal.
         """
-        if self.runtime is not None:
-            return self.runtime
+        if self._runtime is not None:
+            return self._runtime
         return self.series.runtime
 
     @property

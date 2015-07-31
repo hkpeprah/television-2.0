@@ -43,6 +43,8 @@ def list_latest_episodes_for_country(country, date):
         episode = dict()
         for (orig_field, new_field) in episode_mapping.iteritems():
             episode[new_field] = episode_metadata.get(orig_field, None)
+            if new_field == 'image' and isinstance(episode[new_field], dict):
+                episode[new_field] = episode[new_field].get('original', '')
 
         if episode['summary'] is not None:
             episode['summary'] = re.sub('<[^>]*>', '', episode['summary'])

@@ -1,5 +1,8 @@
 # Requirements for the timeline
 requests >= 2.6.2
+pyOpenSSL
+ndg-httpsclient
+pyasn1
 
 # Web requirements
 flask >= 0.10.1

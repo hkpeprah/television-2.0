@@ -9,6 +9,9 @@ import sources
 import timeline
 
 
+def is_crunchyroll_source(series):
+    return series.source_type == sources.CRUNCHYROLL_SOURCE
+
 def unix_time(dt):
     """
     Converts a datetime object to the seconds since epoch.  Converts to

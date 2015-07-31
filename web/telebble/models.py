@@ -142,7 +142,7 @@ class User(Document):
     Represents a Pebble Time user.
     """
     _id = fields.SequenceField(primary_key=True)
-    user_token = fields.StringField(unique=True)
+    token = fields.StringField(unique=True)
     subscriptions = fields.ListField(fields.ReferenceField('Series'))
 
     # Purely for tracking purposes, doesn't mean anything

@@ -82,7 +82,7 @@ class Media(Document):
     Represents an Episode, Movie, etc.
     """
     _id = fields.SequenceField(primary_key=True)
-    name = fields.StringField(required=True)
+    name = fields.StringField(required=False, default='')
     summary = fields.StringField(default='')
     image = fields.StringField(required=False)
     season = fields.IntField(required=False)
@@ -93,6 +93,11 @@ class Media(Document):
     # Back reference to the Series, should be added when the modal is created to prevent
     # additional query requests against the database.
     series = fields.ReferenceField('Series', required=True)
+
+    # We use this information to check for uniqueness and for possible queries for more
+    # information about the series in particular.
+    source_id = fields.IntField(required=False)
+    source_type = fields.StringField(choices=sources.DATA_SOURCES, required=False)
 
     # Extra data
     extra_data = fields.DictField(default={})

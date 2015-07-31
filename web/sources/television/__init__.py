@@ -7,7 +7,6 @@ from common import COUNTRY_CODES as country_codes
 
 API = TelevisionApi()
 
-
 def list_latest_episodes(*args, **kwargs):
     raise NotImplemented
 

@@ -5,9 +5,7 @@ API = FunimationApi()
 
 
 def list_latest_episodes(limit=100):
-    #episodes_list = API.get_latest_episodes(limit=limit)
     episodes_list = API.get_latest(limit=limit)
-
     return episodes_list
 
 

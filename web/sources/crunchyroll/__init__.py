@@ -4,7 +4,6 @@ import dateutil.parser
 
 API = CrunchyrollApi()
 
-
 def list_latest_episodes(num_series=10):
     series_list = API.get_latest_episodes(limit=num_series)
     simulcast_data = { 'series': [], 'episodes': [] }
@@ -20,7 +19,7 @@ def list_latest_episodes(num_series=10):
         # TODO: Figure out what the runtime of the series are.
         series['runtime'] = None
 
-        # Populate hte extra data fields with Crunchyroll specific information.
+        # Populate the extra data fields with Crunchyroll specific information.
         series['extra_data'] = {}
         series['extra_data']['url'] = series_metadata.get('url', None)
         series['extra_data']['series_id'] = series_metadata.get('series_id', None)

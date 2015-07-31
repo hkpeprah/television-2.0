@@ -46,5 +46,6 @@ def send_pin(media):
         topic += '-premium'
         _pin = copy.deepcopy(pin)
         _pin.id = str(media._id) + '-free'
+        # TODO: Change the time to the Free Available time
         _send_pin(_topic, _pin)
     return _send_pin(topic, pin)

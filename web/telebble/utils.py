@@ -28,7 +28,7 @@ def timestamp_to_iso(timestamp):
     """
     utc = pytz.utc
     datetime_utc = datetime.datetime.utcfromtimestamp(int(timestamp))
-    datetime_utc = datetime_utc.replace(tz-info=utc)
+    datetime_utc = datetime_utc.replace(tz_info=utc)
     return '%sZ' % datetime_utc.isoformat()
 
 def iso_to_timestamp(iso):

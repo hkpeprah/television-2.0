@@ -8,6 +8,8 @@ import utils
 
 def fetch_from_funimation():
     data = sources.funimation.list_latest_episodes()
+    series = data.get('series', [])
+    episodes = data.get('episodes', [])
 
     source_type = sources.FUNIMATION_SOURCE
 
@@ -20,6 +22,60 @@ def fetch_from_funimation():
         network.country = 'US'
         network.source_type = source_type
         network.save()
+
+    for series_data in series:
+        extra_data = series.get('extra_data', {})
+        _id = extra_data.get('series_id')
+        query = models.Series.objects(source_id=_id, source_type=source_type)
+        if query.first() is not None:
+            continue
+
+        series = models.Series()
+
+        series.name = series_data['name']
+        series.description = series_data['description'] or ''
+        series.genres = series_data['genres']
+        series.image = series_data['image'] or ''
+        series.runtime = series_data['runtime']
+
+        series.network = network
+
+        series.source_id = _id
+        series.source_type = source_type
+        series.extra_data = extra_data
+
+        series.save()
+
+        network.update(add_to_set__series=[series])
+        network.save()
+
+    for episode_data in episodes:
+        extra_data = episode_data.get('extra_data', {})
+        series_id = extra_data.get('series_id')
+
+        _id = extra_data.get('media_id')
+        query = models.Media.objects(source_id=_id, source_type=source_type)
+        media = query.first() if query.first() is not None else models.Media()
+
+        media.name = episode_data['name']
+        media.summary = episode_data['summary']
+        media.image = episode_data['image']
+        media.season = int(episode_data['season'])
+        media.number = int(episode_data['number'])
+        media.timestamp = episode_data['timestamp']
+        media.runtime = episode_data['runtime']
+
+        series = models.Series.objects(source_type=source_type, source-id=series_id).first()
+        media.series = series
+
+        media.source_id = _id
+        media.source_type = source_type
+        media.extra_data = extra_data
+
+        media.save()
+
+        series.update(add_to_set__media=[media])
+        series.save()
 
 def fetch_from_crunchyroll():
     data = sources.crunchyroll.list_latest_episodes(100)

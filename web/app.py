@@ -103,10 +103,12 @@ class UserResource(BaseResource):
             return { 'status': 'Error' }
 
         if 'subscribe' in json_data:
-            subscribe(user, json_data['subscribe'])
+            status = subscribe(user, json_data['subscribe'])
+            return { 'status': 'Ok' if status else 'Error' }
 
         if 'unsubscribe' in json_data:
-            unsubscribe(user, json_data['unsubscribe'])
+            status = unsubscribe(user, json_data['unsubscribe'])
+            return { 'status': 'Ok' if status else 'Error' }
 
         settings_fields = (
             'country',

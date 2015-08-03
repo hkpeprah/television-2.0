@@ -1,5 +1,7 @@
 import collections
 
+from fields import ValidationException
+
 
 def serialize(data):
     """
@@ -27,6 +29,13 @@ class DictionableObject(dict):
         for k, v in self.items():
             yield k, v
 
+    def __getattr__(self, attr):
+        return self.get(attr)
+
+    __setattr__ = dict.__setitem__
+
+    __delattr__ = dict.__delitem__
+
     def __repr__(self):
         dictrepr = dict.__repr__(self)
         return '%s(%s)' % (type(self).__name__, dictrepr)
@@ -44,7 +53,9 @@ class SerializableObject(DictionableObject):
     def json(self):
         d = dict()
         for (attr, value) in self:
-            d[attr] = serialize(value)
+            value = serialize(value)
+            if value is not None:
+                d[attr] = value
         return d
 
 class ValidatableObject(SerializableObject):
@@ -52,13 +63,16 @@ class ValidatableObject(SerializableObject):
         super(ValidatableObject, self).__init__(*args, **kwargs)
 
     def validate(self):
-        validatable_objects = list(v for _, v in self)
+        validatable_objects = list((k, v) for k, v in self)
         while len(validatable_objects) > 0:
-            to_validate = validatable_objects.pop(0)
+            name, to_validate = validatable_objects.pop(0)
             if isinstance(to_validate, list):
-                validatable_objects += to_validate
+                validatable_objects += map(lambda f: (name, f), to_validate)
             elif hasattr(to_validate, 'validate'):
-                to_validate.validate()
+                try:
+                    to_validate.validate()
+                except ValidationException as e:
+                    raise ValidationException('Validation error on field %s of %s: %s' % (name, type(self).__name__, str(e)))
 
     def set(self, key, value):
         if key in self and hasattr(self[key], 'value'):

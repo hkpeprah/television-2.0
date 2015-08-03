@@ -125,6 +125,85 @@ class TestPin(unittest.TestCase):
 
         self.assertDoesNotRaise(ValidationException, p.validate)
 
+    def test_pin_multiple(self):
+        p1 = Pin()
+        p1.id = '400'
+
+        p2 = Pin()
+        p2.id = '500'
+
+        self.assertTrue(p1.id.value == '400')
+        self.assertTrue(p2.id.value == '500')
+
+    def test_pin_json(self):
+        p = Pin()
+        p.layout.add_section('Hello', 'Goodbye')
+        data = p.json()
+
+        self.assertTrue(len(data['layout']['headings']) == 1)
+        self.assertTrue(len(data['layout']['paragraphs']) == 1)
+        self.assertTrue(data['layout']['headings'][0] == 'Hello')
+        self.assertTrue(data['layout']['paragraphs'][0] == 'Goodbye')
+
+        p.layout.add_section('Goodbye', 'Hello')
+        data = p.json()
+
+        self.assertTrue(len(data['layout']['headings']) == 2)
+        self.assertTrue(len(data['layout']['paragraphs']) == 2)
+        self.assertTrue(data['layout']['headings'][0] == 'Hello')
+        self.assertTrue(data['layout']['paragraphs'][0] == 'Goodbye')
+        self.assertTrue(data['layout']['headings'][1] == 'Goodbye')
+        self.assertTrue(data['layout']['paragraphs'][1] == 'Hello')
+
+    def test_pin_full_example(self):
+        p = Pin()
+
+        action = Action()
+        action.launch_code = 13
+        action.title = 'Open in Watchapp'
+        action.type = 'openWatchApp'
+
+        self.assertDoesNotRaise(ValidationException, action.validate)
+
+        p.add_action(action)
+
+        reminder = Reminder()
+        reminder.time = '2015-08-04T20:00:00+00:00Z'
+        reminder.layout.backgroundColor = '#FFFFFF'
+        reminder.layout.body = 'Drama about a police unit...'
+        reminder.layout.foregroundColor = '#000000'
+        reminder.layout.largeIcon = 'system://images/TV_SHOW'
+        reminder.layout.smallIcon = 'system://images/TV_SHOW'
+        reminder.layout.tinyIcon = 'system://images/TV_SHOW'
+        reminder.layout.subtitle = 'New Tricks'
+        reminder.layout.title = 'Last Man Standing'
+        reminder.layout.type = 'genericReminder'
+
+        self.assertDoesNotRaise(ValidationException, reminder.validate)
+
+        p.add_reminder(reminder)
+
+        p.layout.backgroundColor = '#FFFFFF'
+        p.layout.foregroundColor = '#000000'
+        p.layout.tinyIcon = 'system://images/TV_SHOW'
+        p.layout.title = 'Last Man Standing'
+        p.layout.subtitle = 'New Tricks'
+        p.layout.type = 'genericPin'
+        p.layout.shortTitle = 'Last Man Standing'
+        p.layout.body = 'Drama about a police unit...'
+        p.layout.add_section('Series', 'New Tricks')
+
+        self.assertDoesNotRaise(ValidationException, p.layout.validate)
+
+        p.duration = 60
+        p.id = '101'
+        p.time = '2015-08-04T20:00:00+00:00Z'
+
+        self.assertDoesNotRaise(ValidationException, p.validate)
+
+        p.time = ''
+
+        self.assertRaises(ValidationException, p.validate)
 
 if __name__ == '__main__':
     unittest.main()

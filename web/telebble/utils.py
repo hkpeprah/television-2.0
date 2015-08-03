@@ -1,9 +1,12 @@
-import copy
+import re
+import json
+import logging
 
 import pytz
 import datetime
 import dateutil.parser
 
+from common import api
 import constants
 import sources
 import timeline
@@ -42,13 +45,25 @@ def iso_to_timestamp(iso):
     dt = dt.astimezone(pytz.utc)
     return unix_time(dt)
 
+def normalize_description(description):
+    sentences = re.split('\.[\s$]', description)
+    pieces = []
+    description_length = 0
+    max_length = 500
+    for sentence in sentences:
+        description_length += len(sentence)
+        pieces.append(sentence)
+        if description_length >= max_length:
+            break
+    return '. '.join(pieces)
+
 def create_generic_pin(media):
     """
     Creates a generic pin from a media object.
     """
-    pin = Timeline.Pin()
+    pin = timeline.Pin()
     pin.id = str(media._id)
-    pin.time = media.timestamp
+    pin.time = timestamp_to_iso(media.timestamp).replace('+00:00', '')
 
     if media.runtime is not None:
         pin.duration = media.runtime
@@ -61,10 +76,11 @@ def create_generic_pin(media):
 
     series = media.series
     description = media.summary
-    if (description is None or len(description) == 0) and series.description is not None:
-        description = series.description
-    else:
-        description = 'No Description'
+    if description is None or len(description) == 0:
+        if series.description is not None and len(series.description) > 0:
+            description = normalize_description(series.description)
+        else:
+            description = 'No Description'
 
     pin.layout.body = description
 
@@ -80,29 +96,18 @@ def create_generic_pin(media):
     pin.layout.add_section('Series', media.series_name)
 
     if media.season is not None:
-        pin.layout.add_section('Season', media.season)
+        pin.layout.add_section('Season', str(media.season))
 
-    pin.layout.add_section('Episode', media.number)
+    pin.layout.add_section('Episode', str(media.number))
 
     action = timeline.Action()
     action.title = 'Open in Watchapp'
     action.type = timeline.resources.ACTION_TYPES['OPEN']
-    action.launch_code = constants.LAUNCH_CODE_OPEN
     pin.add_action(action)
-
-    reminder = timeline.Reminder()
-    reminder.layout.type = timeline.resources.REMINDER_LAYOUTS['GENERIC']
-    reminder.layout.tinyIcon = icon
-    reminder.layout.smallIcon = icon
-    reminder.layout.largeIcon = icon
-    reminder.layout.foregroundColor = colors['BLACK']
-    reminder.layout.backgroundColor = colors['WHITE']
-    reminder.layout.title = media.normalized_name
-    reminder.layout.subtitle = media.series_name
 
     # The minutes before the time the event begins to show a reminder on
     # the watch.
-    reminder_times = (0, 30, constants.SECONDS_IN_A_DAY)
+    reminder_times = (0, 30, 60 * 24)
     messages = (
         '',
         '',
@@ -110,11 +115,21 @@ def create_generic_pin(media):
     )
 
     for (minutes, message) in zip(reminder_times, messages):
-        air_time = pin.time
+        reminder = timeline.Reminder()
+        reminder.layout.type = timeline.resources.REMINDER_LAYOUTS['GENERIC']
+        reminder.layout.tinyIcon = icon
+        reminder.layout.smallIcon = icon
+        reminder.layout.largeIcon = icon
+        reminder.layout.foregroundColor = colours['BLACK']
+        reminder.layout.backgroundColor = colours['WHITE']
+        reminder.layout.title = media.normalized_name
+        reminder.layout.subtitle = media.series_name
+        reminder.layout.shortTitle = media.normalized_name
 
-        _reminder = copy.deepcopy(reminder)
-        _reminder.layout.body = '%s %s' % (description, message)
-        pin.add_reminder(_reminder)
+        air_time = media.timestamp - (minutes * constants.SECONDS_IN_A_MINUTE)
+        reminder.time = timestamp_to_iso(air_time).replace('+00:00', '')
+        reminder.layout.body = '%s %s' % (description, message)
+        pin.add_reminder(reminder)
 
     return pin
 
@@ -130,7 +145,7 @@ def create_pin_for_funimation(media):
 
 def create_pin_for_television(media):
     pin = create_generic_pin(media)
-    pin.layout.add_section('Network', media.network)
+    pin.layout.add_section('Network', media.network.name)
     pin.layout.add_section('Country', media.country)
     return pin
 
@@ -145,3 +160,46 @@ def create_pin_for_media_object(media):
     elif media.source_type == sources.TELEVISION_SOURCE:
         return create_pin_for_television(media)
     return None
+
+def send_pin_for_topic(topic, pin):
+    try:
+        pin.validate()
+        serialized = pin.json()
+        status, result = api.send_shared_pin([topic], serialized)
+        if not status:
+            if len(result.content) > 0:
+                to_json = json.loads(result.content)
+                logging.error(json.dumps(to_json, indent=4, sort_keys=True))
+        return status
+    except timeline.fields.ValidationException as e:
+        logging.error('Failed to validate pin: %s' % str(e))
+        logging.error('%s\n' % json.dumps(pin.json(), indent=4, sort_keys=True))
+        return False
+    return True
+
+def send_pin(media):
+    now = unix_time(datetime.datetime.utcnow().replace(tzinfo=pytz.utc))
+    if media.timestamp < (now - constants.SECONDS_IN_A_DAY):
+        logging.debug('Skipping %s, too far in the past: %s' % (media, timestamp_to_iso(media.timestamp)))
+        return False
+
+    pin = create_pin_for_media_object(media)
+    topic = str(media.series._id)
+    if is_crunchyroll_source(media):
+        # We have to send a pin for both for the free and premium versions
+        # of this data source, so we'll send the free one here as a copy.
+        free_topic = topic + '-free'
+        free_pin = create_pin_for_media_object(media)
+        free_pin.id = str(media._id) + '-free'
+        free_pin.time = timestamp_to_iso(iso_to_timestamp(media.extra_data['free_available_time'])).replace('+00:00', '')
+        send_pin_for_topic(free_topic, free_pin)
+        pin.id = str(media._id) + '-premium'
+        topic += '-premium'
+    elif is_funimation_source(media):
+        if media.extra_data['premium']:
+            topic += '-premium'
+            pin.id = str(media._id) + '-premium'
+        else:
+            topic += '-free'
+            pin.id = str(media._id) + '-free'
+    return send_pin_for_topic(topic, pin)

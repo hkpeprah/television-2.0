@@ -7,19 +7,21 @@ class Layout(ValidatableObject):
     """
     Layout object.
     """
-    type = ChoicesField(LAYOUT_TYPES, required=True)
-    title = StringField(required=True, min_length=1)
-    shortTitle = StringField()
-    subtitle = StringField()
-    body = StringField(required=True, min_length=1)
-    tinyIcon = ChoicesField(ICONS)
-    smallIcon = ChoicesField(ICONS, required=False)
-    largeIcon = ChoicesField(ICONS, required=False)
-    foregroundColor = ChoicesField(COLOURS, required=False)
-    backgroundColor = ChoicesField(COLOURS, required=False)
-    lastUpdated = NumberField(requird=False)
-    headings = []
-    paragraphs = []
+    def __init__(self, *args, **kwargs):
+        self.type = ChoicesField(LAYOUT_TYPES, required=True)
+        self.title = StringField(required=True, min_length=1)
+        self.shortTitle = StringField(required=False)
+        self.subtitle = StringField(required=False)
+        self.body = StringField(required=True, min_length=1, max_length=1024)
+        self.tinyIcon = ChoicesField(ICONS)
+        self.smallIcon = ChoicesField(ICONS, required=False)
+        self.largeIcon = ChoicesField(ICONS, required=False)
+        self.foregroundColor = ChoicesField(COLOURS, required=False)
+        self.backgroundColor = ChoicesField(COLOURS, required=False)
+        self.lastUpdated = NumberField(requird=False)
+        self.headings = []
+        self.paragraphs = []
+        super(Layout, self).__init__()
 
     def add_section(self, header, body):
         self.headings.append(StringField(value=header, min_length=1, required=True))

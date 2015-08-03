@@ -7,5 +7,7 @@ class Notification(ValidatableObject):
     """
     Notification object.
     """
-    time = DateField(required=True)
-    layout = Layout()
+    def __init__(self, *args, **kwargs):
+        self.time = DateField(required=True)
+        self.layout = Layout()
+        super(Notification, self).__init__()

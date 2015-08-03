@@ -45,7 +45,7 @@ class StringField(BaseField):
         max_length = getattr(self, 'max_length', None)
         if value is None and min_length is None:
             return None
-        elif not isinstance(value, str):
+        elif not isinstance(value, basestring):
             raise ValidationException('Error: given value is not a string')
         elif min_length is not None and len(value) < min_length:
             raise ValidationException('Error: minimum length is %s' % min_length)
@@ -73,12 +73,12 @@ class DateField(BaseField):
             try:
                 tz_patt = r'[+][0-9][0-9]:[0-9][0-9]Z'
                 m = re.search(tz_patt, value)
-                if not m:
-                    raise Exception
-                value =value.replace(m.group(0), '')
+                if m:
+                    value = value.replace(m.group(0), '')
+                value = value.replace('Z', '')
                 datetime.datetime.strptime(value, '%Y-%m-%dT%H:%M:%S')
             except Exception as e:
-                raise ValidationException('Error: Invalidate date field: %s' % self.value)
+                raise ValidationException('Error: Invalid date field: %s' % self.value)
 
 def flatten(obj):
     """

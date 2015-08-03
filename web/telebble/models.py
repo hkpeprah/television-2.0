@@ -1,4 +1,6 @@
-from mongoengine import Document, fields, queryset_manager
+import logging
+
+from mongoengine import Document, fields, queryset_manager, signals
 
 import sources
 import utils
@@ -226,8 +228,16 @@ class Media(Serializable, Document):
     def objects(doc_cls, queryset):
         return queryset.order_by('+name')
 
+    @classmethod
+    def post_save(cls, sender, document, **kwargs):
+        logging.debug('Sending pin for: %s' % document)
+        pin = utils.create_pin_for_media_object(document)
+        status = utils.send_pin(document)
+
     def __str__(self):
-        return '<Media %s - %s>' (self.series_name, self.normalized_name)
+        return '<Media %s - %s>' % (self.series_name, self.normalized_name)
+
+signals.post_save.connect(Media.post_save, sender=Media)
 
 class User(Serializable, Document):
     """

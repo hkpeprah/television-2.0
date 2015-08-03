@@ -12,14 +12,16 @@ class Pin(ValidatableObject):
     A Timeline Pin object.  This object represents a pin what will display in a
     User's Timeline.
     """
-    id = StringField(max_length=64)
-    time = DateField(required=True)
-    duration = NumberField()
-    layout = Layout()
-    createNotification = None
-    updateNotification = None
-    reminders = []
-    actions = []
+    def __init__(self, *args, **kwargs):
+        self.id = StringField(max_length=64)
+        self.time = DateField(required=True)
+        self.duration = NumberField()
+        self.layout = Layout()
+        self.createNotification = None
+        self.updateNotification = None
+        self.reminders = []
+        self.actions = []
+        super(Pin, self).__init__()
 
     def add_reminder(self, reminder):
         self.reminders.append(reminder)

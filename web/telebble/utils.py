@@ -12,6 +12,9 @@ import timeline
 def is_crunchyroll_source(series):
     return series.source_type == sources.CRUNCHYROLL_SOURCE
 
+def is_funimation_source(series):
+    return series.source_type == sources.FUNIMATION_SOURCE
+
 def unix_time(dt):
     """
     Converts a datetime object to the seconds since epoch.  Converts to
@@ -28,7 +31,7 @@ def timestamp_to_iso(timestamp):
     """
     utc = pytz.utc
     datetime_utc = datetime.datetime.utcfromtimestamp(int(timestamp))
-    datetime_utc = datetime_utc.replace(tz_info=utc)
+    datetime_utc = datetime_utc.replace(tzinfo=utc)
     return '%sZ' % datetime_utc.isoformat()
 
 def iso_to_timestamp(iso):
@@ -58,7 +61,7 @@ def create_generic_pin(media):
 
     series = media.series
     description = media.summary
-    if description is None and series.description is not None:
+    if (description is None or len(description) == 0) and series.description is not None:
         description = series.description
     else:
         description = 'No Description'

@@ -3,7 +3,8 @@ import os
 
 import models
 import sources
-import timeline
+import timeline.api
+import timeline.fields
 import utils
 
 
@@ -43,9 +44,14 @@ def send_pin(media):
         # We have to send a pin for both for the free and premium versions
         # of this data source, so we'll send the free one here as a copy.
         _topic = topic + '-free'
-        topic += '-premium'
         _pin = copy.deepcopy(pin)
         _pin.id = str(media._id) + '-free'
-        # TODO: Change the time to the Free Available time
+        _pin.timestamp = utils.iso_to_timestamp(media.extra_data['free_available_time'])
         _send_pin(_topic, _pin)
+        topic += '-premium'
+    elif utils.is_funimation_source(media):
+        if media.extra_data['premium']:
+            topic += '-premium'
+        else:
+            topic += '-free'
     return _send_pin(topic, pin)

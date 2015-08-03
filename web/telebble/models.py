@@ -1,9 +1,26 @@
 from mongoengine import Document, fields, queryset_manager
 
 import sources
+import utils
 
 
-class Network(Document):
+class Serializable(object):
+    """
+    Inherited from a subclass to provide it with a .json method for serialization
+    from the API.
+    """
+    def json(self):
+        serialized = {}
+        serializable_fields = self.serializable_fields or []
+        for _field in serializable_fields:
+            field = _field.strip('_')
+            value = getattr(self, _field, None)
+            if hasattr(value, 'json'):
+                value = value.json()
+            serialized[field] = value
+        return serialized
+
+class Network(Serializable, Document):
     """
     A Network acts a parent to various different series media objects. For
     subscription-based services, the network is considered to be the hosting
@@ -15,6 +32,15 @@ class Network(Document):
         'None',
         'Subscription',
         'Movie'
+    )
+
+    serializable_fields = (
+        '_id',
+        '_type',
+        'name',
+        'description',
+        'timezone',
+        'country'
     )
 
     _id = fields.SequenceField(primary_key=True)
@@ -41,7 +67,12 @@ class Network(Document):
     def objects(doc_cls, queryset):
         return queryset.order_by('+name')
 
-class Series(Document):
+    def json(self):
+        serialized = super(Network, self).json()
+        serialized['series_count'] = len(self.series)
+        return serialized
+
+class Series(Serializable, Document):
     """
     A series is a collection of media objects that all belong to the same show/franchise/etc.
     Whenever a new media object for the series is detected, it will be added to the existing
@@ -49,6 +80,17 @@ class Series(Document):
     avoid duping data, we use the `series_id` of the source to perform a query for
     uniqueness.
     """
+    serializable_fields = (
+        '_id',
+        'name',
+        'description',
+        'genres',
+        'image',
+        'runtime',
+        'network',
+        'latest'
+    )
+
     _id = fields.SequenceField(primary_key=True)
     name = fields.StringField(required=True)
     description = fields.StringField(required=True)
@@ -73,14 +115,42 @@ class Series(Document):
     def country(self):
         return self.network.country
 
+    @property
+    def latest(self):
+        if len(self.media) == 0:
+            return None
+        ordered = sorted(self.media, key=lambda m: m.timestamp, reverse=True)
+        return ordered[0]
+
     @queryset_manager
     def objects(doc_cls, queryset):
         return queryset.order_by('+name')
 
-class Media(Document):
+    def json(self):
+        serialized = super(Series, self).json()
+        serialized['episode_count'] = len(self.media)
+        return serialized
+
+class Media(Serializable, Document):
     """
     Represents an Episode, Movie, etc.
     """
+    serializable_fields = (
+        '_id',
+        'name',
+        'summary',
+        'image',
+        'season',
+        'number',
+        'runtime',
+        'series_id',
+        'series_name',
+        'network_id',
+        'network_name',
+        'timestamp',
+        'air_date'
+    )
+
     _id = fields.SequenceField(primary_key=True)
     name = fields.StringField(required=False, default='')
     summary = fields.StringField(default='')
@@ -102,8 +172,18 @@ class Media(Document):
     extra_data = fields.DictField(default={})
 
     @property
+    def air_date(self):
+        if self.timestamp is not None:
+            return utils.timestamp_to_iso(self.timestamp)
+        return None
+
+    @property
     def country(self):
         return self.series.country
+
+    @property
+    def series_id(self):
+        return self.series._id
 
     @property
     def series_name(self):
@@ -116,6 +196,14 @@ class Media(Document):
     @property
     def network(self):
         return self.series.network
+
+    @property
+    def network_id(self):
+        return self.network._id
+
+    @property
+    def network_name(self):
+        return self.network.name
 
     @property
     def runtime(self):
@@ -141,10 +229,18 @@ class Media(Document):
     def __str__(self):
         return '<Media %s - %s>' (self.series_name, self.normalized_name)
 
-class User(Document):
+class User(Serializable, Document):
     """
     Represents a Pebble Time user.
     """
+    serializable_fields = (
+        '_id',
+        'token',
+        'country',
+        'crunchyroll_premium',
+        'funimation_premium'
+    )
+
     _id = fields.SequenceField(primary_key=True)
     token = fields.StringField(unique=True)
     subscriptions = fields.ListField(fields.ReferenceField('Series'))

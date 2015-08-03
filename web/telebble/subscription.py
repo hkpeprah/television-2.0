@@ -11,20 +11,25 @@ import utils
 api = timeline.api.TimelineApi(os.environ['PEBBLE_TIMELINE_API_KEY'])
 
 def subscribe(user, topics):
-    series = models.Series(_id__in=topics)
-    user.update(add_to_set__subscriptions=series)
+    series = models.Series.objects(_id__in=topics)
+    ids = map(lambda s: s._id, series)
+    user.update(add_to_set__subscriptions=ids)
     for series in series:
         topic = str(series._id)
         if utils.is_crunchyroll_source(series):
             topic += '-%s' % ('premium' if user.crunchyroll_premium else 'free')
+        elif utils.is_funimation_source(series):
+            topic += '-%s' % ('premium' if user.funimation_premium else 'free')
         api.subscribe(user.token, topic)
     user.save()
     user.reload()
 
 def unsubscribe(user, topics):
-    series = models.Series(_id__in=topics)
-    for series in series:
+    series = models.Series.objects(_id__in=topics)
+    ids = map(lambda s: s._id, series)
+    for (topic, series) in zip(ids, series):
         user.update(pull__subscriptions=series)
+        api.unsubscribe(user.token, topic)
     user.save()
     user.reload()
 

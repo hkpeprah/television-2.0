@@ -24,7 +24,7 @@
       <div class='clear'></div>
       <ul id='dropdown-menu'>
         <li><a href='#add'>Add Shows</a></li>
-        <li><a href='#my-list'>My List</a></li>
+        <li><a href='#my-list'>My Subscriptions</a></li>
         <li><a href='#settings'>Settings</a></li>
       </ul>
     </div>
@@ -33,19 +33,34 @@
         <div class='search-row'>
           <input id='search' class='search-text' type='text' placeholder='Search for a Series...' />
         </div>
-        <ul id='search-results' class='series-list'>
-        </ul>
+        <div id='search-results' class='series-list'></div>
       </div>
       <div id='my-list'>
-        <h1>My List</h1>
+        <div class='centered bordered' style='margin-bottom: 20px'>
+          <h2>My Subscriptions</h2>
+        </div>
+        <div id='subscriptions-list' class='series-list'></div>
       </div>
       <div id='settings'>
-        <h1>Settings</h1>
+        <div class='centered bordered' style='margin-bottom: 10px'>
+          <h2>Settings</h2>
+        </div>
+        <div id='settings-list'>
+          <div class='setting' data-settings-type='crunchyroll_premium'>
+            <h3>Crunchyroll Premium</h3>
+            <span class='checkbox' data-type='checkbox'></span>
+          </div>
+          <div class='setting' data-settings-type='funimation_premium'>
+            <h3>Funimation Premium</h3>
+            <span class='checkbox' data-type='checkbox'></span>
+          </div>
+        </div>
       </div>
     </div>
     <div id='templates' style='display none'>
       <script id='series-template' type='text/template'>
-        <div id='series-<%= id %>' class='series' data-id='<%= id %>'>
+        <div id='series-<%= id %>' class='series' data-id='<%= id %>'
+             <% if (latest) { %>data-latest-id='<%= latest.id %>'<% } %>>
           <!-- Series information -->
           <div class='table'>
             <div class='table-cell'>
@@ -69,13 +84,43 @@
             </div>
           </div>
           <hr/>
-          <p>
-            <% if (description.length > 200) { %>
+          <% if (description.length > 200) { %>
+            <p class='description description-short'>
               <%= description.substring(0, 200) %>...
-            <% } else { %>
+            </p>
+            <p class='description description-long' style='display: none'>
               <%= description %>
-            <% } %>
-          </p>
+            </p>
+          <% } else { %>
+            <p class='description description-long'><%= description %></p>
+          <% } %>
+          <hr/>
+          <div class='block' style='width: 100%'>
+            <div class='padded left'>
+              <strong>Latest Episode: </strong>
+              <span>
+                <% if (latest) { %>
+                  <% if (latest.name && latest.name.length) { %>
+                    <%= latest.name.substring(0, Math.min(20, latest.name.length)) %>
+                  <% } else { %>
+                    Season <%= latest.season %> - Episode <%= latest.number %>
+                  <% } %>
+                  |
+                  <%= latest.air_date %>
+                <% } else { %>
+                  None
+                <% } %>
+              </span>
+            </div>
+            <div class='padded right'>
+              <% if (user_token) { %>
+                <a class='btn light' data-type='subscribe'>
+                  <% if (subscribed) { %>Unsubscribe<% } else { %>Subscribe<% } %>
+                </a>
+              <% } %>
+            </div>
+            <div class='clear'></div>
+          </div>
         </div>
       </script>
     </div>

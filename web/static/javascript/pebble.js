@@ -15,6 +15,7 @@
     this.transactionId = 0;
 
     this.user_token = user_token;
+    this.user_subscriptions = [];
     this.crunchyroll_premium = false;
     this.funimation_premium = false;
     this.country = 'US';
@@ -42,7 +43,39 @@
     });
   };
 
-  API.prototype.updateUser = function(settingName, settingValue) {
+  API.prototype.updateUser = function(data, callback) {
+    if (!this.user_token) {
+      return;
+    }
+    var self = this;
+    var endpoint = 'user/' + this.user_token;
+    var url = this.baseUrl + endpoint;
+
+    callback = callback || function() {};
+    $.ajax({
+      type: 'POST',
+      url: url,
+      dataType: 'json',
+      async: true,
+      data: JSON.stringify(data),
+      success: function(data) {
+        callback(data);
+      }
+    });
+  };
+
+  API.prototype.getUserSubscriptions = function(callback) {
+    if (!this.user_token) {
+      return;
+    }
+
+    var self = this;
+    var endpoint = 'user/' + this.user_token + '/subscriptions';
+    var url = this.baseUrl + endpoint;
+    callback = callback || function() {};
+    $.getJSON(url, function(data) {
+      callback(data);
+    });
   };
 
   API.prototype.search = function(query, page, callback) {
@@ -71,6 +104,59 @@
     return '?' + queryParams.join('&');
   }
 
+  function createSeriesElemFromData(data) {
+    var tmpl = $('#series-template').html();
+    var rendered = _.template(tmpl);
+    if (data && data.latest && data.latest.air_date) {
+      var date = data.latest.air_date;
+      var d = new Date(date.substring(0, date.length - 1));
+      data.latest.air_date = d.toDateString() + ' ' + d.toLocaleTimeString();
+    }
+    if (api.user_token) {
+      data.subscribed = api.user_subscriptions.indexOf(data.id) != -1;
+    }
+    data.user_token = api.user_token;
+    rendered = rendered(data);
+    return $(rendered);
+  };
+
+  function loadSubscriptions() {
+    api.getUserSubscriptions(function(data) {
+      var items = data.items || [];
+      var target = $('#subscriptions-list');
+      target.children().remove();
+      $(items).each(function(idx, data) {
+        target.append(createSeriesElemFromData(data));
+      });
+    });
+  }
+
+  function onUser(data) {
+    if (!data) {
+      return;
+    }
+    var crunchyrollSetting = $('[data-settings-type="crunchyroll_premium"] .checkbox');
+    api.crunchyroll_premium = data.crunchyroll_premium;
+    if (!api.crunchyroll_premium) {
+      crunchyrollSetting.removeClass('selected');
+    } else {
+      crunchyrollSetting.addClass('selected');
+    }
+
+    var funimationSetting = $('[data-settings-type="funimation_premium"] .checkbox');
+    api.funimation_premium = data.funimation_premium;
+    if (!api.funimation_premium) {
+      funimationSetting.removeClass('selected');
+    } else {
+      funimationSetting.addClass('selected');
+    }
+
+    api.country = data.country;
+    api.user_subscriptions = data.subscriptions;
+
+    loadSubscriptions();
+  }
+
   function onSearchResults(data) {
     if (typeof data == 'undefined') {
       endOfResults = true;
@@ -86,20 +172,12 @@
       target.children().remove();
     }
 
-    if (current_page == num_pages || items.length == 0) {
+    if (current_page >= num_pages || items.length == 0) {
       endOfResults = true;
     }
 
-    var tmpl = $('#series-template').html();
     $(items).each(function(idx, data) {
-      if (data && data.latest && data.latest.air_date) {
-        var date = data.latest.air_date;
-        var d = new Date(date.substring(0, date.length - 1));
-        data.latest.air_date = d.toLocaleString();
-      }
-      var rendered = _.template(tmpl)(data);
-      var obj = $(rendered);
-      target.append(obj);
+      target.append(createSeriesElemFromData(data));
     });
   }
 
@@ -137,6 +215,42 @@
       }
     });
 
+    $('[data-type="checkbox"]').click(function(ev) {
+      var item = $(this).parent('.setting');
+      var settingType = item.data('settings-type');
+      var val = !$(this).hasClass('selected');
+      var data = {};
+      data[settingType] = val;
+      api.updateUser(data, function(data) {
+        api.getUser(onUser);
+      });
+    });
+
+    $(document.body).on('click', '.description-short', function() {
+      var $series = $(this).parent('.series');
+      $series.find('.description-short').css('display', 'none');
+      $series.find('.description-long').css('display', 'block');
+    });
+
+    $(document.body).on('click', '[data-type="subscribe"]', function() {
+      var $series = $(this).parents('.series');
+      var id = $series.data('id');
+      var self = $(this);
+      var data = {};
+      if (api.user_subscriptions.indexOf(id) != -1) {
+        data.unsubscribe = [ id ];
+      } else {
+        data.subscribe = [ id ];
+      }
+      api.updateUser(data, function(data) {
+        api.getUser(function(data) {
+          var subscriptions = data.subscriptions;
+          self.text((subscriptions.indexOf(id) != -1 ? 'Unsubscribe' : 'Subscribe'));
+          onUser(data);
+        });
+      });
+    });
+
     $window.on('scroll', function(ev) {
       ev.preventDefault();
       ev.stopPropagation();
@@ -169,14 +283,7 @@
   $(window).ready(function() {
     var userToken = $.QueryString['user_token'];
     api = API(userToken);
-    api.getUser(function(data) {
-      if (!data) {
-        return;
-      }
-      api.crunchyroll_premium = data.crunchyroll_premium;
-      api.funimation_premium = data.funimation_premium;
-      api.country = data.country;
-    });
+    api.getUser(onUser);
     attachListeners();
   });
 })(window, window.$ || window.jQuery, window._ || window.underscore);

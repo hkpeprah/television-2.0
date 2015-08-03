@@ -254,3 +254,8 @@ class User(Serializable, Document):
     crunchyroll_premium = fields.BooleanField(default=True)
     # TODO: Use this in a meaningful way
     funimation_premium = fields.BooleanField(default=False)
+
+    def json(self):
+        serialized = super(User, self).json()
+        serialized['subscriptions'] = map(lambda s: s._id, self.subscriptions)
+        return serialized

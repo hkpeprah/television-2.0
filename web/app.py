@@ -19,7 +19,7 @@ class BaseResource(Resource):
         self.parser = reqparse.RequestParser()
         self.parser.add_argument('page', type=int, location='args', required=False)
 
-    def get(self, resource, singleton=False, *args, **kwargs):
+    def get(self, resource, singleton=False, limit_results=True, *args, **kwargs):
         page = request.args.get('page', 1)
         try:
             page = int(page)
@@ -30,11 +30,13 @@ class BaseResource(Resource):
         if query is not None:
             kwargs.update({ 'name__istartswith': query })
 
-        limit = self.LIMIT_PER_PAGE
-        offset = (page - 1) * limit
-
         objects = resource.objects(**kwargs)
-        num_pages = int(math.ceil(objects.count() * 1.0 / limit))
+        count = objects.count()
+
+        limit = self.LIMIT_PER_PAGE if limit_results else count
+        offset = (page - 1) * limit if limit_results else 0
+
+        num_pages = int(math.ceil(count * 1.0 / max(limit, 1)))
         objects = objects.skip(offset).limit(limit)
 
         if singleton:
@@ -56,11 +58,13 @@ class NetworkResource(BaseResource):
 class SeriesResource(BaseResource):
     def get(self, series_id=None, network_id=None, user_token=None, **kwargs):
         singleton = False
+        limit_results = True
         if series_id is not None:
             singleton = True
             kwargs.update({ '_id': series_id })
 
         if user_token is not None:
+            limit_results = False
             user = User.objects(token=user_token).first()
             subscriptions = user.subscriptions if user is not None else []
             kwargs.update({ '_id__in': map(lambda s: s._id, subscriptions) })
@@ -68,7 +72,7 @@ class SeriesResource(BaseResource):
         if network_id is not None:
             kwargs.update({ 'network': network_id })
 
-        return super(SeriesResource, self).get(Series, singleton, **kwargs)
+        return super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
 
 class MediaResource(BaseResource):
     def get(self, media_id=None, series_id=None, **kwargs):

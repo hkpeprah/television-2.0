@@ -12,12 +12,14 @@
   ],
   "watchapp": {
     "watchface": false,
-    "hiddenApp": false
+    "hiddenApp": true,
+    "onlyShownOnCommunication": false
   },
   "capabilities": [
     "configurable"
   ],
   "appKeys": {
+    "dummy": 0
   },
   "resources": {
     "media": [

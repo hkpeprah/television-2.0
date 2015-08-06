@@ -19,8 +19,9 @@ class TimelineApi(object):
         'shared': '{}/{}/shared/pins/{}',
         'user': '{}/{}/user/pins/{}',
         'delete': '{}/{}/user/pins/{}',
-        'subscribe': '{}/{}/user/subscription/{}',
-        'unsubscribe': '{}/{}/user/subscription/{}'
+        'delete_shared': '{}/{}/shared/pins/{}',
+        'subscribe': '{}/{}/user/subscriptions/{}',
+        'unsubscribe': '{}/{}/user/subscriptions/{}'
     }
 
     def __init__(self, api_key=None, api_root=None, *args, **kwargs):
@@ -45,10 +46,17 @@ class TimelineApi(object):
         }, data=json.dumps(pin))
         return (result.status_code == requests.codes.ok), result
 
-    def delete_user_pin(self, user_token, pin):
-        url = self.URLS['delete'].format(self.api_root, self.api_version, pin['id'])
+    def delete_user_pin(self, user_token, pin_id):
+        url = self.URLS['delete'].format(self.api_root, self.api_version, pin_id)
         result = requests.delete(url, headers={
             'X-User-Token': user_token
+        })
+        return (result.status_code == requests.codes.ok), result
+
+    def delete_shared_pin(self, pin_id):
+        url = self.URLS['delete_shared'].format(self.api_root, self.api_version, pin_id)
+        result = requests.delete(url, headers={
+            'X-API-Key': self.api_key
         })
         return (result.status_code == requests.codes.ok), result
 

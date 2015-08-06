@@ -1,6 +1,7 @@
 #include <pebble.h>
-#include "message/message.h"
+
 #include "debug/logging.h"
+#include "message/message.h"
 
 static void prv_init(void) {
   app_message_init();
@@ -19,6 +20,8 @@ static void prv_init(void) {
     default:
       WARN("NYI");
   }
+  Window *window = window_create();
+  window_stack_push(window, false);
 }
 
 static void prv_deinit(void) {

@@ -1,3 +1,4 @@
+# Python extensions
 *.py[cod]
 *.py~
 *~
@@ -68,3 +69,7 @@ build
 
 # Emacs temporary files
 *~
+
+# Mac Extensions
+.lock
+.lock-*

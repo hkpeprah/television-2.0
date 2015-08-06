@@ -46,15 +46,19 @@ def iso_to_timestamp(iso):
     return unix_time(dt)
 
 def normalize_description(description):
+    """
+    Descriptions have a max length when passed over, so this utility function allows us
+    to trim the description down to a set of sentences that fits within the length limit.
+    """
     sentences = re.split('\.[\s$]', description)
     pieces = []
     description_length = 0
-    max_length = 500
+    max_length = 600
     for sentence in sentences:
         description_length += len(sentence)
-        pieces.append(sentence)
         if description_length >= max_length:
             break
+        pieces.append(sentence)
     return '. '.join(pieces)
 
 def create_generic_pin(media):
@@ -81,6 +85,8 @@ def create_generic_pin(media):
             description = normalize_description(series.description)
         else:
             description = 'No Description'
+    else:
+        description = normalize_description(description)
 
     pin.layout.body = description
 
@@ -91,6 +97,7 @@ def create_generic_pin(media):
 
     colours = timeline.resources.COLOURS
     pin.layout.foregroundColor = colours['BLACK']
+    pin.layout.secondaryColor = colours['BLACK']
     pin.layout.backgroundColor = colours['WHITE']
 
     pin.layout.add_section('Series', media.series_name)

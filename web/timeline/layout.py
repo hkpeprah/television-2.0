@@ -18,6 +18,7 @@ class Layout(ValidatableObject):
         self.largeIcon = ChoicesField(ICONS, required=False)
         self.foregroundColor = ChoicesField(COLOURS, required=False)
         self.backgroundColor = ChoicesField(COLOURS, required=False)
+        self.secondaryColor = ChoicesField(COLOURS, required=False)
         self.lastUpdated = NumberField(requird=False)
         self.headings = []
         self.paragraphs = []

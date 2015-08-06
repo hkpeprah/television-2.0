@@ -109,7 +109,7 @@ void app_message_init(void) {
   app_message_set_context((void *) data);
 
   app_message_open(app_message_inbox_size_maximum(),
-    app_message_outbox_size_maxim());
+    app_message_outbox_size_maximum());
 }
 
 void app_message_deinit(void) {

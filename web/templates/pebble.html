@@ -7,6 +7,7 @@
   <script type='text/javascript' src='static/javascript/pebble.js'></script>
 {% endblock %}
 {% block stylesheets %}
+  <link rel='stylesheet' type='text/css' href='static/stylesheets/spinner.css' />
 {% endblock %}
 {% block content %}
   <div class='container'>
@@ -124,5 +125,11 @@
         </div>
       </script>
     </div>
+  </div>
+  <div id='spinner' class='overlay' style='display: none'>
+    <div class='loader'>Loading</div>
+  </div>
+  <div id='no-results' class='overlay' style='display: none'>
+    <div class='no-results'>No More Results</div>
   </div>
 {% endblock %}

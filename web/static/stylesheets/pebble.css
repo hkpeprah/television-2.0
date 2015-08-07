@@ -251,6 +251,7 @@ hr {
   box-sizing: border-box;
 }
 
+.series-list .series .description-long:hover,
 .series-list .series .description-short:hover {
   cursor: pointer;
 }

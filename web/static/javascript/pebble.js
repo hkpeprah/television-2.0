@@ -1,4 +1,4 @@
-(function(window, $, _) {
+(function(window, $, _, setTimeout) {
   var api;
   var searchText = '';
   var defaultPage = 1;
@@ -131,6 +131,14 @@
     });
   }
 
+  function showSpinner() {
+    $('#spinner').show();
+  }
+
+  function hideSpinner() {
+    $('#spinner').hide();
+  }
+
   function onUser(data) {
     if (!data) {
       return;
@@ -179,6 +187,14 @@
     $(items).each(function(idx, data) {
       target.append(createSeriesElemFromData(data));
     });
+
+    hideSpinner();
+    if (endOfResults) {
+      $('#no-results').show();
+      setTimeout(function() {
+        $('#no-results').hide();
+      }, 1000);
+    }
   }
 
   function attachListeners() {
@@ -211,6 +227,7 @@
       if (ev.which == 13) {
         searchText = $(this).val();
         ev.preventDefault();
+        showSpinner();
         api.search(searchText, defaultPage, onSearchResults);
       }
     });
@@ -230,6 +247,12 @@
       var $series = $(this).parent('.series');
       $series.find('.description-short').css('display', 'none');
       $series.find('.description-long').css('display', 'block');
+    });
+
+    $(document.body).on('click', '.description-long', function() {
+      var $series = $(this).parent('.series');
+      $series.find('.description-long').css('display', 'none');
+      $series.find('.description-short').css('display', 'block');
     });
 
     $(document.body).on('click', '[data-type="subscribe"]', function() {
@@ -267,9 +290,10 @@
       $window.data('ajaxready', false);
 
       // Determine if we actually should load in new content
-      var shouldLoad = false;
-      shouldLoad = $window.scrollTop() >= $(document).height() - $window.outerHeight();
+      var shouldLoad = !endOfResults;
+      shouldLoad = shouldLoad && ($window.scrollTop() >= $(document).height() - $window.outerHeight());
       if (shouldLoad) {
+        showSpinner();
         api.search(searchText, currentPage + 1, function(data) {
           onSearchResults(data);
           $window.data('ajaxready', true);
@@ -286,4 +310,4 @@
     api.getUser(onUser);
     attachListeners();
   });
-})(window, window.$ || window.jQuery, window._ || window.underscore);
+})(window, window.$ || window.jQuery, window._ || window.underscore, window.setTimeout);

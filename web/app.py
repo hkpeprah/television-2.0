@@ -3,6 +3,7 @@ import math
 from flask import Flask, request, render_template
 from flask_restful import Api, Resource, reqparse
 
+from telebble.fetch import search_from_television
 from telebble.models import Network, Series, Media, User
 from telebble.subscription import subscribe, unsubscribe
 
@@ -28,7 +29,7 @@ class BaseResource(Resource):
 
         query = request.args.get('q', None)
         if query is not None:
-            kwargs.update({ 'name__istartswith': query })
+            kwargs.update({ 'name__icontains': query })
 
         objects = resource.objects(**kwargs)
         count = objects.count()
@@ -72,7 +73,12 @@ class SeriesResource(BaseResource):
         if network_id is not None:
             kwargs.update({ 'network': network_id })
 
-        return super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
+        query = request.args.get('q', None)
+        data = super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
+        if query is not None and data['count'] == 0:
+            search_from_television(query)
+            return super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
+        return data
 
 class MediaResource(BaseResource):
     def get(self, media_id=None, series_id=None, **kwargs):

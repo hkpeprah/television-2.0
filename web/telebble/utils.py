@@ -97,8 +97,8 @@ def create_generic_pin(media):
 
     colours = timeline.resources.COLOURS
     pin.layout.foregroundColor = colours['BLACK']
-    pin.layout.secondaryColor = colours['BLACK']
-    pin.layout.backgroundColor = colours['WHITE']
+    pin.layout.secondaryColor = colours['WHITE']
+    pin.layout.backgroundColor = colours['LIGHT_GRAY']
 
     pin.layout.add_section('Series', media.series_name)
 

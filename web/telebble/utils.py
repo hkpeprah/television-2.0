@@ -109,6 +109,7 @@ def create_generic_pin(media):
 
     action = timeline.Action()
     action.title = 'Open in Watchapp'
+    action.launchCode = media._id
     action.type = timeline.resources.ACTION_TYPES['OPEN']
     pin.add_action(action)
 

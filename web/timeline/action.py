@@ -9,5 +9,6 @@ class Action(ValidatableObject):
     """
     def __init__(self, *args, **kwargs):
         self.title = StringField(required=True)
+        self.launchCode = NumberField(required=False)
         self.type = ChoicesField(ACTION_TYPES, required=True)
         super(Action, self).__init__()

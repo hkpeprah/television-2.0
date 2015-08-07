@@ -23,12 +23,6 @@
     return this;
   }
 
-  API.prototype.subscribe = function(sid) {
-  };
-
-  API.prototype.unsubscribe = function(sid) {
-  };
-
   API.prototype.getUser = function(callback) {
     if (!this.user_token) {
       return;
@@ -139,6 +133,22 @@
     $('#spinner').hide();
   }
 
+  function showErrorWindow() {
+    var errorDiv = $('#error-overlay');
+    errorDiv.show();
+    setTimeout(function() {
+      errorDiv.hide();
+    }, 1000);
+  }
+
+  function showEndOfResults() {
+    var noResults = $('#no-results');
+    noResults.show();
+    setTimeout(function() {
+      noResults.hide();
+    }, 1000);
+  }
+
   function onUser(data) {
     if (!data) {
       return;
@@ -190,10 +200,7 @@
 
     hideSpinner();
     if (endOfResults) {
-      $('#no-results').show();
-      setTimeout(function() {
-        $('#no-results').hide();
-      }, 1000);
+      showEndOfResults();
     }
   }
 
@@ -265,12 +272,19 @@
       } else {
         data.subscribe = [ id ];
       }
+      showSpinner();
       api.updateUser(data, function(data) {
-        api.getUser(function(data) {
-          var subscriptions = data.subscriptions;
-          self.text((subscriptions.indexOf(id) != -1 ? 'Unsubscribe' : 'Subscribe'));
-          onUser(data);
-        });
+        if (data.status && data.status == 'Error') {
+          hideSpinner();
+          showErrorWindow();
+        } else {
+          api.getUser(function(data) {
+            var subscriptions = data.subscriptions;
+            self.text((subscriptions.indexOf(id) != -1 ? 'Unsubscribe' : 'Subscribe'));
+            onUser(data);
+            hideSpinner();
+          });
+        }
       });
     });
 

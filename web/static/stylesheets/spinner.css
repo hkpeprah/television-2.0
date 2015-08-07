@@ -57,6 +57,7 @@
   margin-top: 20%;
 }
 
+.overlay .error,
 .overlay .no-results {
   color: #fff;
   margin-top: 20%;

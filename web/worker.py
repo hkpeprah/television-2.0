@@ -28,7 +28,7 @@ def main():
         telebble.fetch.fetch_from_funimation()
         sys.stdout.write('Worker: Finished fetching.\n')
         sys.stdout.flush()
-        time.sleep(seconds_in_a_day)
+        time.sleep(seconds_in_a_day / 2)
         now += datetime.timedelta(days=1)
 
 if __name__ == '__main__':

@@ -1,4 +1,10 @@
 Telebble
 ===============
-Successor to my now deprecated Television tracking application.  It's time for television tracking.
-![](http://poorlydrawnlines.com/wp-content/uploads/2015/05/time.png)
+This is a rewrite of my Television application to be better extensible, use better backends, and
+overall be better written than its predecessor.
+
+## Web Documentation
+Documentation for the web implementation is available [here](web/README.md).
+
+## Pebble App Documentation
+Documentation for the Pebble application implementation is available [here](pebble/README.md).

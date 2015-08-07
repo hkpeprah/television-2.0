@@ -143,6 +143,6 @@ def error_handler(error):
 
 register_api_resource(NetworkResource, '/networks', '/networks/<int:network_id>')
 register_api_resource(SeriesResource, '/series', '/series/<int:series_id>',
-    '/network/<int:network_id>/series', '/user/<user_token>/subscriptions')
+    '/networks/<int:network_id>/series', '/user/<user_token>/subscriptions')
 register_api_resource(MediaResource, '/media', '/media/<int:media_id>', '/series/<int:series_id>/media')
 register_api_resource(UserResource, '/user/<user_token>')

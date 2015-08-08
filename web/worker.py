@@ -1,6 +1,6 @@
 import datetime
+import logging
 import time
-import sys
 
 import mongoengine
 
@@ -12,7 +12,7 @@ import telebble.fetch
 def main():
     now = datetime.datetime.now()
     seconds_in_a_day = telebble.constants.SECONDS_IN_A_DAY
-    sys.stdout.write('Worker: Starting up.\n')
+    logging.debug('Worker: Starting up.')
     mongoengine.connect(db.DATABASE_NAME, alias=db.DATABASE_ALIAS)
     # We always scrape ahead 7 days for the television source as it provides us
     # per day incoming show data.
@@ -20,14 +20,13 @@ def main():
         telebble.fetch.fetch_from_television(now.year, now.month, now.day)
         now += datetime.timedelta(days=1)
 
-    sys.stdout.write('Worker: Finished initialization.\n')
+    logging.debug('Worker: Finished initialization.')
     while True:
-        sys.stdout.write('Worker: Fetching new data.\n')
+        logging.debug('Worker: Fetching new data.')
         telebble.fetch.fetch_from_television(now.year, now.month, now.day)
         telebble.fetch.fetch_from_crunchyroll()
         telebble.fetch.fetch_from_funimation()
-        sys.stdout.write('Worker: Finished fetching.\n')
-        sys.stdout.flush()
+        logging.debug('Worker: Finished fetching.')
         time.sleep(seconds_in_a_day / 2)
         now += datetime.timedelta(days=1)
 

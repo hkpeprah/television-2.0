@@ -142,11 +142,23 @@
   }
 
   function showEndOfResults() {
-    var noResults = $('#no-results');
+    var noResults = $('#results-indicator');
     noResults.show();
-    setTimeout(function() {
-      noResults.hide();
-    }, 1000);
+  }
+
+  function hideEndOfResults() {
+    var noResults = $('#results-indicator');
+    noResults.hide();
+  }
+
+  function showTapIndicator() {
+    var tap = $('#tap-indicator');
+    tap.show();
+  }
+
+  function hideTapIndicator() {
+    var tap = $('#tap-indicator');
+    tap.hide();
   }
 
   function onUser(data) {
@@ -192,6 +204,8 @@
 
     if (current_page >= num_pages || items.length == 0) {
       endOfResults = true;
+    } else {
+      endOfResults = false;
     }
 
     $(items).each(function(idx, data) {
@@ -199,8 +213,13 @@
     });
 
     hideSpinner();
+
     if (endOfResults) {
       showEndOfResults();
+      hideTapIndicator();
+    } else {
+      hideEndOfResults();
+      showTapIndicator();
     }
   }
 
@@ -237,6 +256,11 @@
         showSpinner();
         api.search(searchText, defaultPage, onSearchResults);
       }
+    });
+
+    $('#tap-indicator').click(function(ev) {
+      showSpinner();
+      api.search(searchText, currentPage + 1, onSearchResults);
     });
 
     $('[data-type="checkbox"]').click(function(ev) {
@@ -286,35 +310,6 @@
           });
         }
       });
-    });
-
-    $window.on('scroll', function(ev) {
-      ev.preventDefault();
-      ev.stopPropagation();
-
-      if ($window.data('ajaxready') == false || !searchText || !searchText.length) {
-        return;
-      }
-
-      if ($targets.eq(0).css('display') == 'none') {
-        return;
-      }
-
-      // Mark false so that won't load more content
-      $window.data('ajaxready', false);
-
-      // Determine if we actually should load in new content
-      var shouldLoad = !endOfResults;
-      shouldLoad = shouldLoad && ($window.scrollTop() >= $(document).height() - $window.outerHeight());
-      if (shouldLoad) {
-        showSpinner();
-        api.search(searchText, currentPage + 1, function(data) {
-          onSearchResults(data);
-          $window.data('ajaxready', true);
-        });
-      } else {
-        $window.data('ajaxready', true);
-      }
     });
   }
 

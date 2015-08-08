@@ -258,7 +258,7 @@ def fetch_from_television(year, month, day):
         data = sources.television.list_latest_episodes_for_country(country, date)
         parse_television_data(data)
 
-def search_from_television(query):
+def search_from_television(query, limit=None):
     countries = constants.COUNTRY_CODES
-    data = sources.television.search_for_series(query, countries)
+    data = sources.television.search_for_series(query, countries, limit)
     parse_television_data(data)

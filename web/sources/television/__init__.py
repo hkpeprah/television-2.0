@@ -113,16 +113,22 @@ def list_latest_episodes_for_country(country, date):
 
     return { 'networks': networks, 'episodes': episodes, 'shows': shows }
 
-def search_for_series(query, allowed_countries=None):
+def search_for_series(query, allowed_countries=None, limit=None):
     if allowed_countries is None:
         allowed_countries = API.COUNTRY_CODES
 
     data = API.search(query)
     shows, networks = [], []
+    iteration = 0
 
     for result in data:
         if result is None or result.get('show', None) is None:
             continue
+
+        if limit is not None and iteration >= limit:
+            break
+
+        iteration += 1
 
         show_mapping = {
             'genres': 'genres',

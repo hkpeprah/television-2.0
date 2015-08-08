@@ -14,6 +14,7 @@ version = 'v1'
 
 class BaseResource(Resource):
     LIMIT_PER_PAGE = 20
+    SEARCH_LIMIT = 10
 
     def __init__(self, *args, **kwargs):
         super(BaseResource, self).__init__()
@@ -76,7 +77,7 @@ class SeriesResource(BaseResource):
         query = request.args.get('q', None)
         data = super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
         if query is not None and data['count'] == 0:
-            search_from_television(query)
+            search_from_television(query, limit=self.SEARCH_LIMIT)
             return super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
         return data
 

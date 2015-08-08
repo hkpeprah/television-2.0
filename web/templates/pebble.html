@@ -7,6 +7,7 @@
   <script type='text/javascript' src='static/javascript/pebble.js'></script>
 {% endblock %}
 {% block stylesheets %}
+  <link rel='stylesheet' type='text/css' href='//maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css' />
   <link rel='stylesheet' type='text/css' href='static/stylesheets/spinner.css' />
 {% endblock %}
 {% block content %}
@@ -35,6 +36,12 @@
           <input id='search' class='search-text' type='text' placeholder='Search for a Series...' />
         </div>
         <div id='search-results' class='series-list'></div>
+        <div id='results-indicator' class='results-indicator' style='display: none'>
+          <i class='fa fa-times-circle-o'></i>
+        </div>
+        <div id='tap-indicator' class='tap-indicator' style='display: none'>
+          <i class='fa fa-plus-circle'></i>
+        </div>
       </div>
       <div id='my-list'>
         <div class='centered bordered' style='margin-bottom: 20px'>
@@ -63,11 +70,11 @@
         <div id='series-<%= id %>' class='series' data-id='<%= id %>'
              <% if (latest) { %>data-latest-id='<%= latest.id %>'<% } %>>
           <!-- Series information -->
-          <div class='table'>
-            <div class='table-cell'>
+          <div class='block'>
+            <div class='block'>
               <h2><%= name %></h2>
             </div>
-            <div class='table-cell align-right'>
+            <div class='block'>
               <% if (network.name == 'Crunchyroll') { %>
                 <div class='network yellow'><%= network.name %></div>
               <% } else if (network.name == 'Funimation') { %>
@@ -128,9 +135,6 @@
   </div>
   <div id='spinner' class='overlay' style='display: none'>
     <div class='loader'>Loading</div>
-  </div>
-  <div id='no-results' class='overlay' style='display: none'>
-    <div class='no-results'>No More Results</div>
   </div>
   <div id='error-overlay' class='overlay' style='display: none'>
     <div class='error'>Error Processing Request</div>

@@ -23,6 +23,26 @@
   },
   "resources": {
     "media": [
+      {
+        "type": "png",
+        "name": "SUBSCRIPTIONS_MENU_ICON",
+        "file": "images/television-icon.png"
+      },
+      {
+        "type": "png",
+        "name": "SETTINGS_MENU_ICON",
+        "file": "images/settings-icon.png"
+      },
+      {
+        "type": "png",
+        "name": "SUBSCRIPTIONS_MENU_ICON_INVERTED",
+        "file": "images/television-icon-inverted.png"
+      },
+      {
+        "type": "png",
+        "name": "SETTINGS_MENU_ICON_INVERTED",
+        "file": "images/settings-icon-inverted.png"
+      }
     ]
   }
 }

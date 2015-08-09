@@ -43,6 +43,7 @@ static void prv_progress_layer_update_proc(Layer *layer, GContext *ctx) {
 
   GPoint p = (GPoint){0, y_offset};
   for (int8_t circle_idx = 0; circle_idx < num_circles; circle_idx++) {
+    graphics_context_set_stroke_color(ctx, GColorBlack);
     if (circle_idx == data->current_circle) {
       graphics_context_set_fill_color(ctx, GColorBlack);
     } else {
@@ -50,6 +51,7 @@ static void prv_progress_layer_update_proc(Layer *layer, GContext *ctx) {
     }
     p.x = x_offset * circle_idx + x_offset / 2 + 1;
     graphics_fill_circle(ctx, p, radius);
+    graphics_draw_circle(ctx, p, radius);
   }
 
   data->current_circle += 1;

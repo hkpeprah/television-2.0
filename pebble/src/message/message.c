@@ -106,7 +106,7 @@ void app_message_init(void) {
   app_message_register_inbox_dropped(prv_in_dropped_handler);
   app_message_open(app_message_inbox_size_maximum(),
     app_message_outbox_size_maximum());
-  app_message_set_context((void *) data);
+  app_message_set_context((void *)data);
 
   app_message_open(app_message_inbox_size_maximum(),
     app_message_outbox_size_maximum());

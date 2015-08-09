@@ -2,31 +2,44 @@
 
 #include "debug/logging.h"
 #include "message/message.h"
+#include "ui/progress_window/progress_window.h"
+
+#include <stdbool.h>
+#include <stdint.h>
+
+// Private API
+//////////////////////////
 
 static void prv_init(void) {
-  app_message_init();
+  bool has_media_id = false;
+  uint32_t media_id = 0;
+
   switch (launch_reason()) {
-    case APP_LAUNCH_TIMELINE_ACTION:
-      DEBUG("Timeline NYI");
+    case APP_LAUNCH_TIMELINE_ACTION: {
+      has_media_id = true;
+      media_id = launch_get_args();
       break;
+    }
     case APP_LAUNCH_SYSTEM:
     case APP_LAUNCH_PHONE:
-      // Launched by the system / configuration window.
-      DEBUG("Application launched by system.");
-      break;
     case APP_LAUNCH_USER:
-      DEBUG("Application launched by user.");
       break;
     default:
-      WARN("NYI");
+      ERROR("NYI");
   }
-  Window *window = window_create();
-  window_stack_push(window, false);
+
+  (void)media_id;
+  (void)has_media_id;
+
+  app_message_init();
 }
 
 static void prv_deinit(void) {
   app_message_deinit();
 }
+
+// App Boilerplate
+//////////////////////////
 
 int main(void) {
   prv_init();

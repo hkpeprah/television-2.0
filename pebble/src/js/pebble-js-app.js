@@ -29,7 +29,7 @@ function formatQueryParameters(params) {
 ////////////////////////////
 
 Pebble.addEventListener('ready', function() {
-  console.log('Ready');
+  console.log('Telebble: Javascript is ready');
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
@@ -45,5 +45,5 @@ Pebble.addEventListener('showConfiguration', function(e) {
 });
 
 Pebble.addEventListener('webviewclosed', function(e) {
-  console.log('Webview Closed');
+  console.log('Telebble: webview closed');
 });

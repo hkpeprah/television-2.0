@@ -19,7 +19,7 @@
     "configurable"
   ],
   "appKeys": {
-    "dummy": 0
+    "config": 0
   },
   "resources": {
     "media": [

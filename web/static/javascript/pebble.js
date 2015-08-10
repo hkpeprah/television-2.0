@@ -282,8 +282,10 @@
 
     $(document.body).on('click', '.description-long', function() {
       var $series = $(this).parent('.series');
-      $series.find('.description-long').css('display', 'none');
-      $series.find('.description-short').css('display', 'block');
+      if ($series.find('.description-short').length()) {
+        $series.find('.description-long').css('display', 'none');
+        $series.find('.description-short').css('display', 'block');
+      }
     });
 
     $(document.body).on('click', '[data-type="subscribe"]', function() {

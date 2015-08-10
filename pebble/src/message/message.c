@@ -56,8 +56,8 @@ static void prv_in_recv_handler(DictionaryIterator *iterator, void *context) {
 }
 
 static void prv_in_dropped_handler(AppMessageResult reason, void *context) {
-  ERROR(prv_translate_error(reason));
   AppMessageData *data = app_message_get_context();
+  ERROR(prv_translate_error(reason));
   if (data->message_handler) {
     data->message_handler(NULL, false /* failure */, data->callback_context);
   }
@@ -66,7 +66,7 @@ static void prv_in_dropped_handler(AppMessageResult reason, void *context) {
 // Public API
 /////////////////////////////
 
-bool send_app_message(Tuplet *data, uint8_t len) {
+bool app_message_send(Tuplet *data, uint8_t len) {
   DictionaryIterator *iter;
   uint8_t i;
 

@@ -2,6 +2,7 @@
 
 #include "debug/logging.h"
 #include "message/message.h"
+#include "ui/config_window/config_window.h"
 #include "ui/progress_window/progress_window.h"
 
 #include <stdbool.h>
@@ -18,6 +19,8 @@ typedef struct {
   MenuLayer *menu_layer;
   GBitmap **menu_icons;
   GBitmap **menu_icons_inverted;
+
+  ConfigWindow *config_window;
 } WindowData;
 
 // Main Menu
@@ -168,6 +171,38 @@ static void prv_window_unload(Window *window) {
 
 // Private API
 //////////////////////////
+static void prv_handle_app_message(DictionaryIterator *iter, bool success, void *context) {
+  if (!success) {
+    return;
+  }
+  WindowData *data = context;
+  Tuple *tuple = dict_read_first(iter);
+  while (tuple != NULL) {
+    switch (tuple->key) {
+      case AppKeyConfig: {
+        bool show = (bool)tuple->value->uint8;
+        DEBUG("APPKEYCONFIG: %d", show);
+        if (/*show && */!data->config_window) {
+          // If we get a message telling us to show the config window, and we haven't
+          // yet showed it, then push it onto the window stack.
+          data->config_window = config_window_create();
+          config_window_push(data->config_window);
+        } else if (/*!show && */data->config_window) {
+          // If we have a message telling us to hide the config window, and we haven't
+          // yet hidden it, then pop it from the window stack.
+          config_window_pop(data->config_window);
+          data->config_window = NULL;
+        }
+        break;
+      }
+      default:
+        ERROR("NYI");
+        return;
+    }
+    tuple = dict_read_next(iter);
+  }
+}
+
 static void prv_handle_app_start(uint32_t media_id, bool open_media) {
   Window *window = window_create();
   window_set_background_color(window, GColorWhite);
@@ -180,6 +215,9 @@ static void prv_handle_app_start(uint32_t media_id, bool open_media) {
   memset(data, 0, sizeof(WindowData));
 
   window_set_user_data(window, data);
+
+  app_message_init();
+  app_message_register_handler(prv_handle_app_message, data);
 
   const bool animated = false;
   window_stack_push(window, animated);
@@ -203,7 +241,6 @@ static void prv_init(void) {
       ERROR("NYI");
   }
 
-  app_message_init();
   prv_handle_app_start(media_id, has_media_id);
 }
 

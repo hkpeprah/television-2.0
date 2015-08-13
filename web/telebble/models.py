@@ -248,7 +248,8 @@ class User(Serializable, Document):
         'token',
         'country',
         'crunchyroll_premium',
-        'funimation_premium'
+        'funimation_premium',
+        'num_subscriptions'
     )
 
     _id = fields.SequenceField(primary_key=True)
@@ -264,6 +265,10 @@ class User(Serializable, Document):
     crunchyroll_premium = fields.BooleanField(default=True)
     # TODO: Use this in a meaningful way
     funimation_premium = fields.BooleanField(default=False)
+
+    @property
+    def num_subscriptions(self):
+        return len(self.subscriptions)
 
     def json(self):
         serialized = super(User, self).json()

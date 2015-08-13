@@ -4,9 +4,20 @@ typedef enum {
   // We receive this key when we are to either show or hide the configuration
   // window for the application.
   AppKeyConfig = 0,
+  AppKeyRequest,           // uint8
+  // Settings Keys
+  AppKeyCrunchyrollStatus, // boolean
+  AppKeyFunimationStatus,  // boolean
+  AppKeyCountryCode,       // string
+  AppKeySubscriptionCount, // uint32
   // Number of keys in the keys section of our appinfo.json
   NumAppKeys
 } AppKeys;
+
+typedef enum {
+  RequestKeySettings = 0,
+  NumRequestKeys
+} RequestKeys;
 
 // Note: On a failure, the handler will be called with success being false, when
 // this is the case, the iterator will be NULL.

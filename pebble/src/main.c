@@ -1,5 +1,7 @@
 #include <pebble.h>
 
+#include "settings_menu.h"
+
 #include "debug/logging.h"
 #include "message/message.h"
 #include "ui/config_window/config_window.h"
@@ -20,6 +22,7 @@ typedef struct {
   GBitmap **menu_icons;
   GBitmap **menu_icons_inverted;
 
+  ProgressWindow *progress_window;
   ConfigWindow *config_window;
 } WindowData;
 
@@ -39,13 +42,20 @@ static int16_t prv_menu_layer_get_cell_height_cb(MenuLayer *menu_layer, MenuInde
 
 static void prv_menu_layer_select_click_cb(MenuLayer *menu_layer, MenuIndex *cell_index,
                                            void *callback_context) {
+  WindowData *data = callback_context;
   switch (cell_index->row) {
     case MainMenuSubscriptions:
       DEBUG("Subscriptions");
       break;
-    case MainMenuSettings:
-      DEBUG("Settings");
+    case MainMenuSettings: {
+      Tuplet tuplets[] = { TupletInteger(AppKeyRequest, RequestKeySettings) };
+      if (app_message_send(tuplets, ARRAY_LENGTH(tuplets))) {
+        // Show the progress window while we fetch the settings information
+        data->progress_window = progress_window_create();
+        progress_window_push(data->progress_window);
+      }
       break;
+    }
     default:
       ERROR("NYI");
   }
@@ -176,18 +186,22 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
     return;
   }
   WindowData *data = context;
-  Tuple *tuple = dict_read_first(iter);
-  while (tuple != NULL) {
-    switch (tuple->key) {
+  Tuple *t = dict_read_first(iter);
+
+  bool should_show_settings_menu = false;
+  SettingsMenuData *settings_data = malloc(sizeof(SettingsMenuData));
+  memset(settings_data, 0, sizeof(SettingsMenuData));
+
+  while (t != NULL) {
+    switch (t->key) {
       case AppKeyConfig: {
-        bool show = (bool)tuple->value->uint8;
-        DEBUG("APPKEYCONFIG: %d", show);
-        if (/*show && */!data->config_window) {
+        bool show = (bool)t->value->uint8;
+        if (show && !data->config_window) {
           // If we get a message telling us to show the config window, and we haven't
           // yet showed it, then push it onto the window stack.
           data->config_window = config_window_create();
           config_window_push(data->config_window);
-        } else if (/*!show && */data->config_window) {
+        } else if (!show && data->config_window) {
           // If we have a message telling us to hide the config window, and we haven't
           // yet hidden it, then pop it from the window stack.
           config_window_pop(data->config_window);
@@ -195,12 +209,39 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
         }
         break;
       }
+      case AppKeyCrunchyrollStatus: {
+        should_show_settings_menu = true;
+        settings_data->crunchyroll.premium = (bool)t->value->uint8;
+        break;
+      }
+      case AppKeyFunimationStatus: {
+        should_show_settings_menu = true;
+        settings_data->funimation.premium = (bool)t->value->uint8;
+        break;
+      }
+      case AppKeyCountryCode: {
+        should_show_settings_menu = true;
+        strcpy(settings_data->country, t->value->cstring);
+        break;
+      }
+      case AppKeySubscriptionCount: {
+        should_show_settings_menu = true;
+        settings_data->num_subscriptions = t->value->uint32;
+        break;
+      }
       default:
         ERROR("NYI");
         return;
     }
-    tuple = dict_read_next(iter);
+    t = dict_read_next(iter);
   }
+
+  if (should_show_settings_menu) {
+    show_settings_menu(settings_data);
+    progress_window_pop(data->progress_window);
+  }
+
+  free(settings_data);
 }
 
 static void prv_handle_app_start(uint32_t media_id, bool open_media) {

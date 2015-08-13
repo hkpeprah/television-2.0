@@ -12,14 +12,19 @@
   ],
   "watchapp": {
     "watchface": false,
-    "hiddenApp": true,
+    "hiddenApp": false,
     "onlyShownOnCommunication": false
   },
   "capabilities": [
     "configurable"
   ],
   "appKeys": {
-    "config": 0
+    "config": 0,
+    "request": 1,
+    "crunchyroll_premium": 2,
+    "funimation_premium": 3,
+    "country": 4,
+    "num_subscriptions": 5
   },
   "resources": {
     "media": [

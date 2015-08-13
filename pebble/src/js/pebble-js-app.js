@@ -11,6 +11,19 @@ var API_VERSION = 'v1';
 var SUBSCRIPTIONS = '/user/<%= user_token %>/subscriptions';
 var SETTINGS = '/user/<%= user_token %>';
 
+var APP_KEY_MAPPING = {
+  'config': 0,
+  'request': 1,
+  'crunchyroll_premium': 2,
+  'funimation_premium': 3,
+  'country': 4,
+  'num_subscriptions': 5
+};
+
+var REQUESTS = {
+  'SETTINGS': 0
+};
+
 // Local Globals
 ////////////////////////////
 var userToken = null;
@@ -28,7 +41,7 @@ function formatString(string, data) {
   return string;
 }
 
-function urlJoin() {
+function urljoin() {
   var frags = Array.prototype.slice.call(arguments);
   var url = '';
   for (var i = 0; i < frags.length; i++) {
@@ -92,6 +105,7 @@ function sendAppMessage(data, successHandler, errorHandler) {
     }
   }
 
+  var msg = {};
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i];
     var v = data[k];
@@ -102,10 +116,50 @@ function sendAppMessage(data, successHandler, errorHandler) {
         data[k] = 0;
       }
     }
+    // We have to coerce the message down to the components
+    // that make it up.
+    if (typeof APP_KEY_MAPPING[k] !== 'undefined') {
+      msg[k] = data[k];
+    }
   }
 
-  console.log(JSON.stringify(data));
-  Pebble.sendAppMessage(data, successHandler, errorHandler);
+  console.log(JSON.stringify(msg));
+  Pebble.sendAppMessage(msg, successHandler, errorHandler);
+}
+
+// API Handlers
+/////////////////////////////
+function ajax(url, method, success, error) {
+  var xhr = new XMLHttpRequest();
+  success = success || function() {};
+  error = error || function() {};
+  xhr.open(method, url, true);
+  xhr.onload = function() {
+    try {
+      var res = JSON.parse(xhr.responseText);
+      success(res);
+    } catch (e) {
+      console.log('Error in ajax request: ' + e);
+      error(e, xhr.responseText);
+    }
+  };
+  xhr.send(null);
+}
+
+function fetchUserSettings(token) {
+  token = token || userToken;
+  if (!token) {
+    return;
+  }
+  var url = urljoin(API_ROOT, API_VERSION, formatString(SETTINGS, { 'user_token': token }));
+  ajax(url, 'GET', function(res) {
+    var msg = {};
+    msg.crunchyroll_premium = res.crunchyroll_premium;
+    msg.funimation_premium = res.funimation_premium;
+    msg.country = res.country;
+    msg.num_subscriptions = res.num_subscriptions;
+    sendAppMessage(msg);
+  });
 }
 
 // Event Listeners
@@ -116,7 +170,7 @@ Pebble.addEventListener('ready', function() {
 });
 
 Pebble.addEventListener('showConfiguration', function(e) {
-  var url = urlJoin(CONFIG_ROOT, CONFIG_ENDPOINT);
+  var url = urljoin(CONFIG_ROOT, CONFIG_ENDPOINT);
   getTimelineToken(function(token) {
     url += formatQueryParameters({ user_token: token });
     sendAppMessage({ config: true }, function() {
@@ -132,5 +186,13 @@ Pebble.addEventListener('webviewclosed', function(e) {
 });
 
 Pebble.addEventListener('appmessage', function(e) {
-  console.log('Received message: ' + JSON.stringify(e.payload));
+  if (e.payload) {
+    switch (e.payload.request) {
+      case REQUESTS.SETTINGS: // Settings Request Key
+        fetchUserSettings();
+        break;
+      default:
+        console.log('NYI: ', e.payload.request);
+    }
+  }
 });

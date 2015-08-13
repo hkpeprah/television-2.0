@@ -57,9 +57,9 @@ static void prv_progress_layer_update_proc(Layer *layer, GContext *ctx) {
   data->current_circle += 1;
   data->current_circle %= num_circles;
 
-  const uint16_t timeout_ms = 500;
-  data->progress_timer = app_timer_register(timeout_ms, prv_progress_layer_timer_cb,
-      data->progress_layer);
+  const uint16_t timeout_ms = 400;
+  app_timer_cancel(data->progress_timer);
+  data->progress_timer = app_timer_register(timeout_ms, prv_progress_layer_timer_cb, data->progress_layer);
 }
 
 static void prv_progress_window_load(Window *window) {

@@ -50,6 +50,7 @@ static char *prv_translate_error(AppMessageResult result) {
 
 static void prv_in_recv_handler(DictionaryIterator *iterator, void *context) {
   AppMessageData *data = app_message_get_context();
+  DEBUG("Received message");
   if (data->message_handler) {
     data->message_handler(iterator, true /* success */, data->callback_context);
   }
@@ -91,8 +92,6 @@ void app_message_register_handler(AppMessageHandler handler, void *callback_cont
   if (!data) {
     WARN("app message not initialized before registering");
     app_message_init();
-    app_message_register_handler(handler, callback_context);
-    return;
   }
   data->message_handler = handler;
   data->callback_context = callback_context;
@@ -104,12 +103,8 @@ void app_message_init(void) {
 
   app_message_register_inbox_received(prv_in_recv_handler);
   app_message_register_inbox_dropped(prv_in_dropped_handler);
-  app_message_open(app_message_inbox_size_maximum(),
-    app_message_outbox_size_maximum());
   app_message_set_context((void *)data);
-
-  app_message_open(app_message_inbox_size_maximum(),
-    app_message_outbox_size_maximum());
+  app_message_open(app_message_inbox_size_maximum(), app_message_outbox_size_maximum());
 }
 
 void app_message_deinit(void) {

@@ -80,13 +80,13 @@ static void prv_select_click(MenuLayer *menu_layer, MenuIndex *cell_index, void 
   if (cell_index->row == SWAP_SELECT_ROW) {
     menu->current_section++;
     menu->current_section %= menu->num_sections;
-    menu_layer_reload_data(menu->menu_layer);
   } else {
     SwapMenuItem *item = &section->items[cell_index->row - 1];
     if (item->callback) {
       item->callback(item, item->callback_context);
     }
   }
+  menu_layer_reload_data(menu->menu_layer);
 }
 
 // Private API
@@ -218,4 +218,11 @@ void swap_menu_pop(SwapMenu *menu) {
   Window *window = swap_menu_get_window(menu);
   const bool animated = true;
   window_stack_remove(window, animated);
+}
+
+void swap_menu_reload(SwapMenu *menu) {
+  if (!menu) {
+    return;
+  }
+  menu_layer_reload_data(menu->menu_layer);
 }

@@ -21,7 +21,10 @@ var APP_KEY_MAPPING = {
 };
 
 var REQUESTS = {
-  'SETTINGS': 0
+  'SETTINGS': 0,
+  'UPDATE': 1,
+  'SUBSCRIBE': 2,
+  'UNSUBSCRIBE': 3
 };
 
 // Local Globals
@@ -192,7 +195,7 @@ Pebble.addEventListener('appmessage', function(e) {
         fetchUserSettings();
         break;
       default:
-        console.log('NYI: ', e.payload.request);
+        console.log('NYI: ', JSON.stringify(e.payload));
     }
   }
 });

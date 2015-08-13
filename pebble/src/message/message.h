@@ -1,4 +1,5 @@
 #pragma once
+#include <pebble.h>
 
 typedef enum {
   // We receive this key when we are to either show or hide the configuration
@@ -16,6 +17,9 @@ typedef enum {
 
 typedef enum {
   RequestKeySettings = 0,
+  RequestKeyUpdate,
+  RequestKeySubscribe,
+  RequestKeyUnsubscribe,
   NumRequestKeys
 } RequestKeys;
 

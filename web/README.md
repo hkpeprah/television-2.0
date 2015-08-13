@@ -121,6 +121,7 @@ to see if there are keys).
   country: String,
   crunchyroll_premium: Boolean,
   funimation_premium: Boolean
-  subscriptions: array of Numbers
+  subscriptions: array of Numbers,
+  num_subscriptions: Number
 }
 ```

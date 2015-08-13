@@ -1,5 +1,3 @@
-#include <pebble.h>
-
 #include "settings_menu.h"
 
 #include "debug/logging.h"
@@ -7,6 +5,7 @@
 #include "ui/config_window/config_window.h"
 #include "ui/progress_window/progress_window.h"
 
+#include <pebble.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>

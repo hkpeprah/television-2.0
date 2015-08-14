@@ -50,6 +50,10 @@ Window *swap_menu_get_window(SwapMenu *menu);
 // @param section Pointer to the section to add to the SwapMenu
 void swap_menu_add_section(SwapMenu *menu, SwapMenuSection *section);
 
+// Reloads the data in a SwapMenu
+// @param menu Pointer to a SwapMenu to reload
+void swap_menu_reload(SwapMenu *menu);
+
 // Pushes a SwapMenu onto the window stack
 // @param menu Pointer to the SwapMenu to push
 void swap_menu_push(SwapMenu *menu);
@@ -57,7 +61,3 @@ void swap_menu_push(SwapMenu *menu);
 // Removes a SwapMenu from the window stack
 // @param menu Pointer to the SwapMenu to remove
 void swap_menu_pop(SwapMenu *menu);
-
-// Reloads the data in a SwapMenu
-// @param menu Pointer to a SwapMenu to reload
-void swap_menu_reload(SwapMenu *menu);

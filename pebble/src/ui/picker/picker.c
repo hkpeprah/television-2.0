@@ -5,6 +5,7 @@
 #include <string.h>
 
 #define PICKER_HEIGHT  (36)
+#define PICKER_OFFSET  (10)
 
 typedef struct {
   const char *text;
@@ -14,7 +15,12 @@ typedef struct {
 
 struct Picker {
   Window *window;
+
+  const char *text;
+
+  TextLayer *text_layer;
   MenuLayer *menu_layer;
+
   PickerOption *options;
   uint8_t num_options;
 };
@@ -45,22 +51,36 @@ static void prv_select_click(MenuLayer *menu_layer, MenuIndex *cell_index, void 
   Picker *picker = callback_context;
   PickerOption *option = &picker->options[cell_index->row];
   if (option->callback) {
-    option->callback(picker, cell_index->row, callback_context);
+    option->callback(picker, cell_index->row, option->callback_context);
   }
 }
 
 static void prv_window_load(Window *window) {
   Layer *window_layer = window_get_root_layer(window);
   GRect frame = layer_get_frame(window_layer);
+  Picker *picker = window_get_user_data(window);
 
   const uint8_t padding = 10;
-  const GRect picker_frame = GRect(frame.origin.x + padding, frame.origin.y + (frame.size.h - PICKER_HEIGHT) / 2 - 2,
+  const int16_t y_offset = frame.origin.y + (frame.size.h - PICKER_HEIGHT) / 2 - 2;
+
+  const GRect text_frame = GRect(frame.origin.x + padding, y_offset - PICKER_HEIGHT / 2,
+                                 frame.size.w - 2 * padding, PICKER_HEIGHT);
+  const GRect picker_frame = GRect(frame.origin.x + padding, y_offset + PICKER_OFFSET,
                                    frame.size.w - 2 * padding, PICKER_HEIGHT);
 
-  Picker *picker = window_get_user_data(window);
+  TextLayer *text_layer = text_layer_create(text_frame);
+  picker->text_layer = text_layer;
+  text_layer_set_text(text_layer, picker->text);
+  text_layer_set_text_color(text_layer, GColorBlack);
+  text_layer_set_background_color(text_layer, GColorWhite);
+  text_layer_set_overflow_mode(text_layer, GTextOverflowModeFill);
+  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14_BOLD));
+  text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
+
+  layer_add_child(window_layer, text_layer_get_layer(text_layer));
+
   MenuLayer *menu_layer = menu_layer_create(picker_frame);
   picker->menu_layer = menu_layer;
-
   menu_layer_pad_bottom_enable(menu_layer, false /* no pad */);
   menu_layer_set_click_config_onto_window(menu_layer, window);
   menu_layer_set_normal_colors(menu_layer, GColorVividCerulean, GColorWhite);
@@ -82,6 +102,10 @@ static void prv_window_unload(Window *window) {
     menu_layer_destroy(picker->menu_layer);
   }
 
+  if (picker->text_layer) {
+    text_layer_destroy(picker->text_layer);
+  }
+
   if (picker->options) {
     free(picker->options);
   }
@@ -94,7 +118,7 @@ static void prv_window_unload(Window *window) {
 
 // Public API
 ///////////////////////////////
-Picker *picker_create(const char *title) {
+Picker *picker_create(const char *text) {
   Picker *picker = malloc(sizeof(Picker));
   Window *window = window_create();
 
@@ -106,6 +130,7 @@ Picker *picker_create(const char *title) {
   });
 
   memset(picker, 0, sizeof(Picker));
+  picker->text = text;
   picker->window = window;
 
   return picker;
@@ -130,6 +155,15 @@ void picker_add_option(Picker *picker, const char *text, PickerCallback cb, void
     .callback = cb,
     .callback_context = callback_context
   };
+}
+
+void picker_set_selected_index(Picker *picker, uint8_t idx) {
+  if (!(picker && picker->menu_layer)) {
+    return;
+  }
+  const bool animated = false;
+  MenuIndex index = (MenuIndex){ .row = idx, .section = 0 };
+  menu_layer_set_selected_index(picker->menu_layer, index, MenuRowAlignTop, animated);
 }
 
 void picker_push(Picker *picker) {

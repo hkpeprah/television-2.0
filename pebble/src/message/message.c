@@ -50,7 +50,6 @@ static char *prv_translate_error(AppMessageResult result) {
 
 static void prv_in_recv_handler(DictionaryIterator *iterator, void *context) {
   AppMessageData *data = app_message_get_context();
-  DEBUG("Received message");
   if (data->message_handler) {
     data->message_handler(iterator, true /* success */, data->callback_context);
   }

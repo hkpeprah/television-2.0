@@ -174,14 +174,14 @@ SwapMenu *swap_menu_create(void) {
   SwapMenu *menu = malloc(sizeof(SwapMenu));
   Window *window = window_create();
 
-  memset(menu, 0, sizeof(SwapMenu));
-
-  menu->window = window;
   window_set_user_data(window, menu);
   window_set_window_handlers(window, (WindowHandlers){
     .load = prv_window_load,
     .unload = prv_window_unload
   });
+
+  memset(menu, 0, sizeof(SwapMenu));
+  menu->window = window;
 
   return menu;
 }
@@ -202,6 +202,13 @@ void swap_menu_add_section(SwapMenu *menu, SwapMenuSection *section) {
   menu->sections[menu->num_sections - 1] = section;
 }
 
+void swap_menu_reload(SwapMenu *menu) {
+  if (!menu) {
+    return;
+  }
+  menu_layer_reload_data(menu->menu_layer);
+}
+
 void swap_menu_push(SwapMenu *menu) {
   if (!menu) {
     return;
@@ -218,11 +225,4 @@ void swap_menu_pop(SwapMenu *menu) {
   Window *window = swap_menu_get_window(menu);
   const bool animated = true;
   window_stack_remove(window, animated);
-}
-
-void swap_menu_reload(SwapMenu *menu) {
-  if (!menu) {
-    return;
-  }
-  menu_layer_reload_data(menu->menu_layer);
 }

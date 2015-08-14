@@ -1,4 +1,5 @@
 #include "settings_menu.h"
+#include "subscriptions_menu.h"
 
 #include "debug/logging.h"
 #include "message/message.h"
@@ -43,9 +44,10 @@ static void prv_menu_layer_select_click_cb(MenuLayer *menu_layer, MenuIndex *cel
                                            void *callback_context) {
   WindowData *data = callback_context;
   switch (cell_index->row) {
-    case MainMenuSubscriptions:
-      DEBUG("Subscriptions");
+    case MainMenuSubscriptions: {
+      subscriptions_menu_show();
       break;
+    }
     case MainMenuSettings: {
       Tuplet tuplets[] = { TupletInteger(AppKeyRequest, RequestKeySettings) };
       if (app_message_send(tuplets, ARRAY_LENGTH(tuplets))) {

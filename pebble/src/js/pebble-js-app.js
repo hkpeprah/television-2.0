@@ -11,25 +11,45 @@ var API_VERSION = 'v1';
 var SUBSCRIPTIONS = '/user/<%= user_token %>/subscriptions';
 var SETTINGS = '/user/<%= user_token %>';
 
+var ERRORS = {
+  'UNKNOWN': 0,
+  'NO_TOKEN': 1
+};
+
 var APP_KEY_MAPPING = {
   'config': 0,
   'request': 1,
   'crunchyroll_premium': 2,
   'funimation_premium': 3,
   'country': 4,
-  'num_subscriptions': 5
+  'num_subscriptions': 5,
+  'id': 6,
+  'name': 7,
+  'subscribed': 8,
+  'network_id': 9,
+  'network_name': 10,
+  'runtime': 11,
+  'latest_name': 12,
+  'latest_summary': 13,
+  'latest_season': 13,
+  'latest_number': 14,
+  'latest_timestamp': 15,
+  'latest_runtime': 16,
+  'error': 17
 };
 
 var REQUESTS = {
   'SETTINGS': 0,
   'UPDATE': 1,
   'SUBSCRIBE': 2,
-  'UNSUBSCRIBE': 3
+  'UNSUBSCRIBE': 3,
+  'SUBSCRIPTIONS': 4
 };
 
 // Local Globals
 ////////////////////////////
 var api = null;
+var mq = null;
 var userToken = null;
 
 // Functions
@@ -94,17 +114,32 @@ function getTimelineToken(callback) {
   });
 }
 
-function sendAppMessage(data, successHandler, errorHandler) {
-  data = data || {};
-  successHandler = successHandler || function() {};
-  errorHandler = errorHandler || successHandler;
+// App Message Queue
+/////////////////////////////
+function MessageQueue() {
+  if (!(this instanceof MessageQueue)) {
+    return new MessageQueue();
+  }
+  this.in_progress = false;
+  this._queue = [];
+  return this;
+}
 
+MessageQueue.prototype.send = function() {
+  if (this._queue.length == 0 || this.in_progress) {
+    return;
+  }
+  var self = this;
+  this.in_progress = true;
+
+  var queue_data = this._queue.shift();
+  var obj = queue_data['obj'];
   // On Android there's an issue with sending booleans over AppMessage,
   // so we'll want to convert any Booleans we find in the data object
   // into integer values.
   var keys = [];
-  for (var key in data) {
-    if (data.hasOwnProperty(key)) {
+  for (var key in obj) {
+    if (obj.hasOwnProperty(key)) {
       keys.push(key);
     }
   }
@@ -112,23 +147,41 @@ function sendAppMessage(data, successHandler, errorHandler) {
   var msg = {};
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i];
-    var v = data[k];
+    var v = obj[k];
     if (typeof v === 'boolean') {
       if (v == true) {
-        data[k] = 1;
+        obj[k] = 1;
       } else if (v == false) {
-        data[k] = 0;
+        obj[k] = 0;
       }
     }
     // We have to coerce the message down to the components
     // that make it up.
     if (typeof APP_KEY_MAPPING[k] !== 'undefined') {
-      msg[k] = data[k];
+      msg[k] = obj[k];
     }
   }
 
-  Pebble.sendAppMessage(msg, successHandler, errorHandler);
-}
+  var success = queue_data['success'];
+  var failure = queue_data['failure'];
+  Pebble.sendAppMessage(msg, function(res) {
+    success(res);
+    self.in_progress = false;
+    self.send();
+  }, function(res) {
+    failure(res);
+    self.in_progress = false;
+    self.send();
+  });
+};
+
+MessageQueue.prototype.queue = function(data, successHandler, errorHandler) {
+  data = data || {};
+  successHandler = successHandler || function() {};
+  errorHandler = errorHandler || successHandler;
+  this._queue.push({ 'obj': data, 'success': successHandler, 'error': errorHandler });
+  this.send();
+};
 
 // API Handlers
 /////////////////////////////
@@ -143,7 +196,9 @@ function Api() {
 Api.prototype.ajax = function (url, method, data, success, error) {
   var xhr = new XMLHttpRequest();
   success = success || function() {};
-  error = error || function() {};
+  error = error || function() {
+    mq.queue({ 'error': ERRORS.UKNOWN });
+  };
   xhr.open(method, url, true);
   xhr.onload = function() {
     try {
@@ -160,9 +215,10 @@ Api.prototype.ajax = function (url, method, data, success, error) {
   xhr.send(data ? JSON.stringify(data) : data);
 };
 
-Api.prototype.fetchUserSettings = function(token) {
+Api.prototype.getUserSettings = function(token) {
   token = token || userToken;
   if (!token) {
+    mq.queue({ 'error': ERRORS.NO_TOKEN });
     return;
   }
   var url = urljoin(this.baseUrl, formatString(SETTINGS, { 'user_token': token }));
@@ -172,7 +228,19 @@ Api.prototype.fetchUserSettings = function(token) {
     msg.funimation_premium = res.funimation_premium;
     msg.country = res.country;
     msg.num_subscriptions = res.num_subscriptions;
-    sendAppMessage(msg);
+    mq.queue(msg);
+  });
+};
+
+Api.prototype.getUserSubscriptions = function(token) {
+  token = token || userToken;
+  if (!token) {
+    mq.queue({ 'error': ERRORS.NO_TOKEN });
+    return;
+  }
+  var url = urljoin(this.baseUrl, formatString(SUBSCRIPTIONS, { 'user_token' : token }));
+  this.ajax(url, 'GET', null, function(res) {
+    mq.queue({ 'error': ERRORS.UNKNOWN });
   });
 };
 
@@ -183,13 +251,20 @@ Api.prototype.updateUserSettings = function(token, settings) {
     'country'
   ];
   var data = {};
+
+  token = token || userToken;
+  if (!token) {
+    mq.queue({ 'error': ERRORS.NO_TOKEN });
+    return;
+  }
+
   for (var i = 0; i < keys.length; i++) {
     var key = keys[i];
     if (typeof settings[key] !== 'undefined') {
       data[key] = settings[key];
     }
   }
-  var url = urljoin(this.baseUrl, formatString(SETTINGS, { 'user_token': token || userToken }));
+  var url = urljoin(this.baseUrl, formatString(SETTINGS, { 'user_token': token }));
   this.ajax(url, 'POST', data, function(res) {
     console.log('Updated user settings: ', JSON.stringify(settings));
   });
@@ -199,6 +274,7 @@ Api.prototype.updateUserSettings = function(token, settings) {
 ////////////////////////////
 Pebble.addEventListener('ready', function() {
   api = new Api();
+  mq = new MessageQueue();
   getTimelineToken();
 });
 
@@ -206,7 +282,7 @@ Pebble.addEventListener('showConfiguration', function(e) {
   var url = urljoin(CONFIG_ROOT, CONFIG_ENDPOINT);
   getTimelineToken(function(token) {
     url += formatQueryParameters({ user_token: token });
-    sendAppMessage({ config: true }, function() {
+    mq.queue({ config: true }, function() {
       Pebble.openURL(url);
     });
   });
@@ -214,17 +290,20 @@ Pebble.addEventListener('showConfiguration', function(e) {
 
 Pebble.addEventListener('webviewclosed', function(e) {
   console.log('Telebble: webview closed');
-  sendAppMessage({ config: false });
+  mq.queue({ config: false });
 });
 
 Pebble.addEventListener('appmessage', function(e) {
   if (e.payload) {
     switch (e.payload.request) {
       case REQUESTS.SETTINGS: // Settings Request Key
-        api.fetchUserSettings();
+        api.getUserSettings();
         break;
       case REQUESTS.UPDATE: // Update user settings
         api.updateUserSettings(userToken, e.payload);
+        break;
+      case REQUESTS.SUBSCRIPTIONS: // Get user subscriptions
+        api.getUserSubscriptions(userToken);
         break;
       default:
         console.log('NYI: ', JSON.stringify(e.payload));

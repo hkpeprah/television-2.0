@@ -11,6 +11,19 @@ typedef enum {
   AppKeyFunimationStatus,  // boolean
   AppKeyCountryCode,       // string
   AppKeySubscriptionCount, // uint32
+  // Item Keys
+  AppKeyId,                // uint32
+  AppKeySubscribed,        // boolean
+  AppKeyNetworkId,         // uint32
+  AppKeyNetworkName,       // cstring
+  AppKeyRuntime,           // uint32
+  AppKeyLatestName,        // cstring
+  AppKeyLatestSummary,     // cstring
+  AppKeyLatestSeason,      // uint32
+  AppKeyLatestNumber,      // uint32
+  AppKeyLatestTimestamp,   // uint32
+  AppKeyLatestRuntime,     // uint32
+  AppKeyError,             // uint16
   // Number of keys in the keys section of our appinfo.json
   NumAppKeys
 } AppKeys;
@@ -20,6 +33,7 @@ typedef enum {
   RequestKeyUpdate,
   RequestKeySubscribe,
   RequestKeyUnsubscribe,
+  RequestKeySubscriptions,
   NumRequestKeys
 } RequestKeys;
 

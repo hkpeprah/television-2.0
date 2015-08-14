@@ -24,7 +24,20 @@
     "crunchyroll_premium": 2,
     "funimation_premium": 3,
     "country": 4,
-    "num_subscriptions": 5
+    "num_subscriptions": 5,
+    "id": 6,
+    "name": 7,
+    "subscribed": 8,
+    "network_id": 9,
+    "network_name": 10,
+    "runtime": 11,
+    "latest_name": 12,
+    "latest_summary": 13,
+    "latest_season": 13,
+    "latest_number": 14,
+    "latest_timestamp": 15,
+    "latest_runtime": 16,
+    "error": 17
   },
   "resources": {
     "media": [

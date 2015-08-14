@@ -148,12 +148,18 @@ Window *progress_window_get_window(ProgressWindow *progress_window) {
 }
 
 void progress_window_push(ProgressWindow *progress_window) {
+  if (!progress_window) {
+    return;
+  }
   Window *window = progress_window_get_window(progress_window);
   const bool animated = true;
   window_stack_push(window, animated);
 }
 
 void progress_window_pop(ProgressWindow *progress_window) {
+  if (!progress_window) {
+    return;
+  }
   Window *window = progress_window_get_window(progress_window);
   const bool animated = true;
   window_stack_remove(window, animated);
@@ -163,7 +169,6 @@ void progress_window_set_text(ProgressWindow *progress_window, const char *text)
   if (!progress_window) {
     return;
   }
-
   Window *window = progress_window_get_window(progress_window);
   ProgressWindowData *data = window_get_user_data(window);
   data->text = text;

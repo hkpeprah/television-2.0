@@ -1,5 +1,5 @@
 #include "settings_menu.h"
-#include "subscriptions_menu.h"
+#include "subscription_menu.h"
 
 #include "debug/logging.h"
 #include "message/message.h"
@@ -24,7 +24,56 @@ typedef struct {
 
   ProgressWindow *progress_window;
   ConfigWindow *config_window;
+
+  SubscriptionMenu *subscription_menu;
 } WindowData;
+
+// Error Window
+//////////////////////////
+static void prv_error_window_load(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  GRect frame = layer_get_frame(window_layer);
+
+  const int16_t padding = 10;
+  GRect text_frame = GRect(frame.origin.x + padding, frame.origin.y,
+                           frame.size.w - 2 * padding, frame.size.h);
+
+  TextLayer *text_layer = text_layer_create(text_frame);
+  window_set_user_data(window, text_layer);
+  text_layer_set_text_color(text_layer, GColorBlack);
+  text_layer_set_background_color(text_layer, GColorWhite);
+  text_layer_set_text_alignment(text_layer, GTextAlignmentCenter);
+  text_layer_set_overflow_mode(text_layer, GTextAlignmentCenter);
+  text_layer_set_font(text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text(text_layer, "Something went wrong!  Double check your internet"
+      " connection as well as your Bluetooth connection to your phone.");
+
+  GSize content_size = text_layer_get_content_size(text_layer);
+  text_frame.origin.y += (frame.size.h - content_size.h) / 2;
+  layer_set_frame(text_layer_get_layer(text_layer), text_frame);
+
+  layer_add_child(window_layer, text_layer_get_layer(text_layer));
+}
+
+static void prv_error_window_unload(Window *window) {
+  TextLayer *text_layer = window_get_user_data(window);
+  if (text_layer) {
+    text_layer_destroy(text_layer);
+  }
+  window_destroy(window);
+}
+
+static void prv_show_error_window(void) {
+  Window *window = window_create();
+  window_set_background_color(window, GColorWhite);
+  window_set_window_handlers(window, (WindowHandlers){
+    .load = prv_error_window_load,
+    .unload = prv_error_window_unload
+  });
+
+  const bool animated = true;
+  window_stack_push(window, animated);
+}
 
 // Main Menu
 //////////////////////////
@@ -45,7 +94,14 @@ static void prv_menu_layer_select_click_cb(MenuLayer *menu_layer, MenuIndex *cel
   WindowData *data = callback_context;
   switch (cell_index->row) {
     case MainMenuSubscriptions: {
-      subscriptions_menu_show();
+      Tuplet tuplets[] = { TupletInteger(AppKeyRequest, RequestKeySubscriptions) };
+      if (app_message_send(tuplets, ARRAY_LENGTH(tuplets))) {
+        // Show the progress window while we fetch the information
+        data->progress_window = progress_window_create();
+        data->subscription_menu = subscription_menu_create();
+        subscription_menu_push(data->subscription_menu);
+        progress_window_push(data->progress_window);
+      }
       break;
     }
     case MainMenuSettings: {
@@ -173,6 +229,9 @@ static void prv_window_unload(Window *window) {
     free(data->menu_icons_inverted);
   }
 
+  progress_window_pop(data->progress_window);
+  subscription_menu_destroy(data->subscription_menu);
+
   memset(data, 0, sizeof(WindowData));
 
   free(data);
@@ -189,6 +248,9 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
   WindowData *data = context;
   Tuple *t = dict_read_first(iter);
 
+  SubscriptionItem *item = malloc(sizeof(SubscriptionItem));
+  memset(item, 0, sizeof(SubscriptionItem));
+
   bool should_show_settings_menu = false;
   SettingsMenuData *settings_data = malloc(sizeof(SettingsMenuData));
   memset(settings_data, 0, sizeof(SettingsMenuData));
@@ -202,6 +264,10 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
           // yet showed it, then push it onto the window stack.
           data->config_window = config_window_create();
           config_window_push(data->config_window);
+          if (data->subscription_menu) {
+            subscription_menu_pop(data->subscription_menu);
+            data->subscription_menu = NULL;
+          }
         } else if (!show && data->config_window) {
           // If we have a message telling us to hide the config window, and we haven't
           // yet hidden it, then pop it from the window stack.
@@ -230,6 +296,63 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
         settings_data->num_subscriptions = t->value->uint32;
         break;
       }
+      case AppKeyId: {
+        item->id = t->value->uint32;
+        break;
+      }
+      case AppKeySubscribed: {
+        item->subscribed = (bool)t->value->uint8;
+        break;
+      }
+      case AppKeyNetworkId: {
+        item->network.id = t->value->uint32;
+        break;
+      }
+      case AppKeyNetworkName: {
+        item->network.name = malloc(strlen(t->value->cstring) + 1);
+        strncpy(item->network.name, t->value->cstring, strlen(t->value->cstring));
+        break;
+      }
+      case AppKeyRuntime: {
+        item->runtime = t->value->uint32;
+        break;
+      }
+      case AppKeyLatestName: {
+        item->has_latest = true;
+        item->latest.name = malloc(strlen(t->value->cstring) + 1);
+        strncpy(item->latest.name, t->value->cstring, strlen(t->value->cstring));
+        break;
+      }
+      case AppKeyLatestSummary: {
+        item->has_latest = true;
+        item->latest.summary = malloc(strlen(t->value->cstring) + 1);
+        strncpy(item->latest.summary, t->value->cstring, strlen(t->value->cstring));
+        break;
+      }
+      case AppKeyLatestSeason: {
+        item->has_latest = true;
+        item->latest.season = t->value->uint32;
+        break;
+      }
+      case AppKeyLatestNumber: {
+        item->has_latest = true;
+        item->latest.number = t->value->uint32;
+        break;
+      }
+      case AppKeyLatestTimestamp: {
+        item->has_latest = true;
+        item->latest.timestamp = t->value->uint32;
+        break;
+      }
+      case AppKeyLatestRuntime: {
+        item->has_latest = true;
+        item->latest.runtime = t->value->uint32;
+        break;
+      }
+      case AppKeyError: {
+        prv_show_error_window();
+        break;
+      }
       default:
         ERROR("NYI");
         return;
@@ -239,8 +362,15 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
 
   if (should_show_settings_menu) {
     show_settings_menu(settings_data);
-    progress_window_pop(data->progress_window);
   }
+
+  // We only free the item if we shouldn't show the SubscriptionItem as
+  // the contract specifies that we will free the memory in the handler ourselves.
+  subscription_menu_add_item(data->subscription_menu, item);
+
+  // On communication we want to remove the progress window
+  progress_window_pop(data->progress_window);
+  data->progress_window = NULL;
 
   free(settings_data);
 }

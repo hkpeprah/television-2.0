@@ -29,6 +29,7 @@ var REQUESTS = {
 
 // Local Globals
 ////////////////////////////
+var api = null;
 var userToken = null;
 
 // Functions
@@ -126,13 +127,20 @@ function sendAppMessage(data, successHandler, errorHandler) {
     }
   }
 
-  console.log(JSON.stringify(msg));
   Pebble.sendAppMessage(msg, successHandler, errorHandler);
 }
 
 // API Handlers
 /////////////////////////////
-function ajax(url, method, success, error) {
+function Api() {
+  if (!(this instanceof Api)) {
+    return new Api();
+  }
+  this.baseUrl = urljoin(API_ROOT, API_VERSION);
+  return this;
+}
+
+Api.prototype.ajax = function (url, method, data, success, error) {
   var xhr = new XMLHttpRequest();
   success = success || function() {};
   error = error || function() {};
@@ -146,16 +154,19 @@ function ajax(url, method, success, error) {
       error(e, xhr.responseText);
     }
   };
-  xhr.send(null);
-}
+  if (method == 'POST') {
+    xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+  }
+  xhr.send(data ? JSON.stringify(data) : data);
+};
 
-function fetchUserSettings(token) {
+Api.prototype.fetchUserSettings = function(token) {
   token = token || userToken;
   if (!token) {
     return;
   }
-  var url = urljoin(API_ROOT, API_VERSION, formatString(SETTINGS, { 'user_token': token }));
-  ajax(url, 'GET', function(res) {
+  var url = urljoin(this.baseUrl, formatString(SETTINGS, { 'user_token': token }));
+  this.ajax(url, 'GET', null, function(res) {
     var msg = {};
     msg.crunchyroll_premium = res.crunchyroll_premium;
     msg.funimation_premium = res.funimation_premium;
@@ -163,12 +174,31 @@ function fetchUserSettings(token) {
     msg.num_subscriptions = res.num_subscriptions;
     sendAppMessage(msg);
   });
-}
+};
+
+Api.prototype.updateUserSettings = function(token, settings) {
+  var keys = [
+    'crunchyroll_premium',
+    'funimation_premium',
+    'country'
+  ];
+  var data = {};
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    if (typeof settings[key] !== 'undefined') {
+      data[key] = settings[key];
+    }
+  }
+  var url = urljoin(this.baseUrl, formatString(SETTINGS, { 'user_token': token || userToken }));
+  this.ajax(url, 'POST', data, function(res) {
+    console.log('Updated user settings: ', JSON.stringify(settings));
+  });
+};
 
 // Event Listeners
 ////////////////////////////
 Pebble.addEventListener('ready', function() {
-  console.log('Telebble: Javascript is ready');
+  api = new Api();
   getTimelineToken();
 });
 
@@ -177,7 +207,6 @@ Pebble.addEventListener('showConfiguration', function(e) {
   getTimelineToken(function(token) {
     url += formatQueryParameters({ user_token: token });
     sendAppMessage({ config: true }, function() {
-      console.log(url);
       Pebble.openURL(url);
     });
   });
@@ -192,7 +221,10 @@ Pebble.addEventListener('appmessage', function(e) {
   if (e.payload) {
     switch (e.payload.request) {
       case REQUESTS.SETTINGS: // Settings Request Key
-        fetchUserSettings();
+        api.fetchUserSettings();
+        break;
+      case REQUESTS.UPDATE: // Update user settings
+        api.updateUserSettings(userToken, e.payload);
         break;
       default:
         console.log('NYI: ', JSON.stringify(e.payload));

@@ -117,15 +117,14 @@ class UserResource(BaseResource):
             status = unsubscribe(user, json_data['unsubscribe'])
             return { 'status': 'Ok' if status else 'Error' }
 
-        settings_fields = (
-            'country',
-            'crunchyroll_premium',
-            'funimation_premium'
-        )
+        if 'country' in json_data:
+            user.country = json_data['country']
 
-        for field in settings_fields:
-            if field in json_data:
-                setattr(user, field, json_data[field])
+        if 'crunchyroll_premium' in json_data:
+            user.crunchyroll_premium = True if json_data['crunchyroll_premium'] else False
+
+        if 'funimation_premium' in json_data:
+            user.funimation_premium = True if json_data['funimation_premium'] else False
 
         user.save()
         return { 'status': 'Ok' }
@@ -153,3 +152,18 @@ register_api_resource(SeriesResource, '/series', '/series/<int:series_id>',
     '/networks/<int:network_id>/series', '/user/<user_token>/subscriptions')
 register_api_resource(MediaResource, '/media', '/media/<int:media_id>', '/series/<int:series_id>/media')
 register_api_resource(UserResource, '/user/<user_token>')
+
+
+if __name__ == '__main__':
+    import db
+    import mongoengine
+
+    app.config['MONGODB_SETTINGS'] = {
+        'db': db.DATABASE_NAME,
+        'alias': db.DATABASE_ALIAS
+    }
+
+    mongoengine.connect(db.DATABASE_NAME,
+        alias=db.DATABASE_ALIAS)
+
+    app.run(debug=True)

@@ -41,10 +41,11 @@ static void prv_change_funimation_status(SwapMenuItem *item, void *callback_cont
   bool premium = !(bool)callback_context;
   Tuplet tuplets[] = {
     TupletInteger(AppKeyRequest, RequestKeyUpdate),
-    TupletInteger(AppKeyCrunchyrollStatus, premium)
+    TupletInteger(AppKeyFunimationStatus, premium)
   };
   if (app_message_send(tuplets, ARRAY_LENGTH(tuplets))) {
     item->subtitle = premium ? "Subscription" : "Free";
+    item->callback_context = (void *)premium;
   }
 }
 
@@ -52,10 +53,11 @@ static void prv_change_crunchyroll_status(SwapMenuItem *item, void *callback_con
   bool premium = !(bool)callback_context;
   Tuplet tuplets[] = {
     TupletInteger(AppKeyRequest, RequestKeyUpdate),
-    TupletInteger(AppKeyFunimationStatus, premium)
+    TupletInteger(AppKeyCrunchyrollStatus, premium)
   };
   if (app_message_send(tuplets, ARRAY_LENGTH(tuplets))) {
     item->subtitle = premium ? "Premium" : "Free";
+    item->callback_context = (void *)premium;
   }
 }
 
@@ -68,6 +70,7 @@ static void prv_country_picker_callback(Picker *picker, uint8_t idx, void *callb
     SwapMenuItem *item = callback_context;
     item->subtitle = COUNTRY_NAMES[idx];
   }
+  picker_destroy(picker);
 }
 
 static void prv_change_country(SwapMenuItem *item, void *callback_context) {

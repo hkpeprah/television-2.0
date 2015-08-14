@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PICKER_HEIGHT  (30)
+#define PICKER_HEIGHT  (36)
 
 typedef struct {
   const char *text;
@@ -32,10 +32,13 @@ static int16_t prv_get_cell_height(MenuLayer *menu_layer, MenuIndex *cell_index,
 
 static void prv_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
   const GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+  const GRect bounds = layer_get_bounds(cell_layer);
+  const GRect text_bounds = GRect(bounds.origin.x + 2, bounds.origin.y, bounds.size.w - 4, bounds.size.h);
+  const uint8_t corner_radius = 0;
   Picker *picker = callback_context;
   PickerOption *option = &picker->options[cell_index->row];
-  graphics_draw_text(ctx, option->text, font, layer_get_bounds(cell_layer), GTextOverflowModeFill,
-                     GTextAlignmentCenter, NULL);
+  graphics_fill_rect(ctx, bounds, corner_radius, GCornersAll);
+  graphics_draw_text(ctx, option->text, font, text_bounds, GTextOverflowModeFill, GTextAlignmentCenter, NULL);
 }
 
 static void prv_select_click(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
@@ -51,7 +54,7 @@ static void prv_window_load(Window *window) {
   GRect frame = layer_get_frame(window_layer);
 
   const uint8_t padding = 10;
-  const GRect picker_frame = GRect(frame.origin.x + padding, frame.origin.y + (frame.size.h - PICKER_HEIGHT) / 2,
+  const GRect picker_frame = GRect(frame.origin.x + padding, frame.origin.y + (frame.size.h - PICKER_HEIGHT) / 2 - 2,
                                    frame.size.w - 2 * padding, PICKER_HEIGHT);
 
   Picker *picker = window_get_user_data(window);
@@ -60,7 +63,7 @@ static void prv_window_load(Window *window) {
 
   menu_layer_pad_bottom_enable(menu_layer, false /* no pad */);
   menu_layer_set_click_config_onto_window(menu_layer, window);
-  menu_layer_set_normal_colors(menu_layer, GColorWhite, GColorBlack);
+  menu_layer_set_normal_colors(menu_layer, GColorVividCerulean, GColorWhite);
   menu_layer_set_highlight_colors(menu_layer, GColorVividCerulean, GColorWhite);
   menu_layer_set_callbacks(menu_layer, picker, (MenuLayerCallbacks){
     .get_num_rows = prv_get_num_rows,

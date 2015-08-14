@@ -24,6 +24,9 @@ typedef enum {
   AppKeyLatestTimestamp,   // uint32
   AppKeyLatestRuntime,     // uint32
   AppKeyError,             // uint16
+  // This key is used when we don't have anything to return, but we want to dismiss
+  // a progress window which may be visible
+  AppKeyDismiss,
   // Number of keys in the keys section of our appinfo.json
   NumAppKeys
 } AppKeys;

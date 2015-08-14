@@ -353,6 +353,10 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
         prv_show_error_window();
         break;
       }
+      case AppKeyDismiss: {
+        DEBUG("Dismissing window");
+        break;
+      }
       default:
         ERROR("NYI");
         return;

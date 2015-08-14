@@ -37,7 +37,8 @@
     "latest_number": 14,
     "latest_timestamp": 15,
     "latest_runtime": 16,
-    "error": 17
+    "error": 17,
+    "dismiss": 18
   },
   "resources": {
     "media": [

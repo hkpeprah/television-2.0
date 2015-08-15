@@ -35,7 +35,12 @@ var APP_KEY_MAPPING = {
   'latest_number': 14,
   'latest_timestamp': 15,
   'latest_runtime': 16,
-  'error': 17
+  'error': 17,
+  'dismiss': 0
+};
+
+var DISMISS = {
+  'NO_RESULTS': 0
 };
 
 var REQUESTS = {
@@ -240,7 +245,13 @@ Api.prototype.getUserSubscriptions = function(token) {
   }
   var url = urljoin(this.baseUrl, formatString(SUBSCRIPTIONS, { 'user_token' : token }));
   this.ajax(url, 'GET', null, function(res) {
-    mq.queue({ 'error': ERRORS.UNKNOWN });
+    if (!(res && res.items)) {
+      mq.queue({ 'error': ERRORS.UNKNOWN });
+    } else if (res.items.length == 0) {
+      mq.queue({ 'dismiss': DISMISS.NO_RESULTS });
+    } else {
+      return;
+    }
   });
 };
 
@@ -265,9 +276,7 @@ Api.prototype.updateUserSettings = function(token, settings) {
     }
   }
   var url = urljoin(this.baseUrl, formatString(SETTINGS, { 'user_token': token }));
-  this.ajax(url, 'POST', data, function(res) {
-    console.log('Updated user settings: ', JSON.stringify(settings));
-  });
+  this.ajax(url, 'POST', data);
 };
 
 // Event Listeners

@@ -14,3 +14,4 @@ phone: build
 
 clean:
 	pebble clean
+	pebble kill

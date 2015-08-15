@@ -351,10 +351,10 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
       }
       case AppKeyError: {
         prv_show_error_window();
+        subscription_menu_pop(data->subscription_menu);
         break;
       }
       case AppKeyDismiss: {
-        DEBUG("Dismissing window");
         break;
       }
       default:

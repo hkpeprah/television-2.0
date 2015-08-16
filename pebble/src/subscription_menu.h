@@ -55,9 +55,10 @@ typedef struct {
   Window *window;
 
   TextLayer *text_layer;
-  MenuLayer *menu_layer;
+  ScrollLayer *scroll_layer;
 
   SubscriptionItem **items;
+  Layer **item_layers;
   uint16_t num_items;
 } SubscriptionMenu;
 

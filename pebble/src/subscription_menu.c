@@ -3,30 +3,99 @@
 
 #include "debug/logging.h"
 
+#include <limits.h>
 #include <pebble.h>
 #include <stdlib.h>
 #include <string.h>
 
+// Drawing Routines
+////////////////////////////////////
+static void prv_draw_triangle(GContext *ctx, GPoint p1, GPoint p2, GPoint p3) {
+  const GPathInfo info = {
+    .num_points = 3,
+    .points = (GPoint []){p1, p2, p3}
+  };
+  GPath *path = gpath_create(&info);
+  gpath_draw_filled(ctx, path);
+  gpath_destroy(path);
+}
+
+static void prv_item_layer_update_proc(Layer *layer, GContext *ctx) {
+  SubscriptionMenu *menu = *((SubscriptionMenu **)layer_get_data(layer));
+  const SubscriptionItem *item = NULL;
+  const GRect bounds = layer_get_bounds(layer);
+  const uint16_t padding = 5;
+
+  uint16_t idx;
+  for (idx = 0; idx < menu->num_items; idx++) {
+    if (layer == menu->item_layers[idx]) {
+      item = menu->items[idx];
+      break;
+    }
+  }
+
+  if (!item) {
+    return;
+  }
+
+  GColor colour;
+  if (item->crunchyroll) {
+    colour = GColorRajah;
+  } else if (item->funimation) {
+    colour = GColorFolly;
+  } else {
+    colour = GColorVividCerulean;
+  }
+
+  graphics_context_set_fill_color(ctx, colour);
+  graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
+  const GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_24);
+  const GSize size = graphics_text_layout_get_content_size(item->name, font,
+    GRect(0, 0, bounds.size.w, SHRT_MAX), GTextOverflowModeWordWrap, GTextAlignmentLeft);
+  const GRect text_bounds =
+    GRect(bounds.origin.x + padding, bounds.size.h / 2 - size.h - 4, bounds.size.w - 2 * padding, bounds.size.h);
+
+  graphics_context_set_text_color(ctx, GColorWhite);
+  graphics_draw_text(ctx, item->name, font, text_bounds, GTextOverflowModeFill, GTextAlignmentRight, NULL);
+
+  const uint16_t stroke_width = 2;
+  graphics_context_set_stroke_color(ctx, GColorWhite);
+  graphics_context_set_stroke_width(ctx, stroke_width /* pixels */);
+  graphics_draw_line(ctx, GPoint(text_bounds.origin.x, text_bounds.origin.y + size.h + padding),
+                     GPoint(text_bounds.size.w + padding, text_bounds.origin.y + size.h + padding));
+
+  const GFont subtitle_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
+  const GRect subtitle_rect = GRect(text_bounds.origin.x, text_bounds.origin.y + size.h + padding + stroke_width,
+                                    text_bounds.size.w, text_bounds.size.h);
+  graphics_draw_text(ctx, item->network.name, subtitle_font, subtitle_rect, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+
+  const uint16_t side_length = 8;
+  if (idx < menu->num_items - 1) {
+    const GPoint p1 = GPoint((bounds.size.w - 2 * side_length) / 2, bounds.size.h - side_length - 2 * padding);
+    const GPoint p2 = GPoint((bounds.size.w + 2 * side_length) / 2, bounds.size.h - side_length - 2 * padding);
+    const GPoint p3 = GPoint(bounds.size.w / 2, bounds.size.h - 2 * padding);
+
+    graphics_context_set_stroke_color(ctx, GColorWhite);
+    graphics_context_set_fill_color(ctx, GColorWhite);
+
+    prv_draw_triangle(ctx, p1, p2, p3);
+  }
+
+  if (idx) {
+    const GPoint p1 = GPoint((bounds.size.w - 2 * side_length) / 2, bounds.origin.y + side_length + 2 * padding);
+    const GPoint p2 = GPoint((bounds.size.w + 2 * side_length) / 2, bounds.origin.y + side_length + 2 * padding);
+    const GPoint p3 = GPoint(bounds.size.w / 2, bounds.origin.y + 2 * padding);
+
+    graphics_context_set_stroke_color(ctx, GColorWhite);
+    graphics_context_set_fill_color(ctx, GColorWhite);
+
+    prv_draw_triangle(ctx, p1, p2, p3);
+  }
+}
+
 // Private API
 ////////////////////////////////////
-static void prv_select_click_cb(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
-  SubscriptionMenu *menu = callback_context;
-  SubscriptionItem *item = menu->items[cell_index->row];
-  SubscriptionItemWindow *window = subscription_item_window_create(item);
-  subscription_item_window_push(window);
-}
-
-static uint16_t prv_get_num_rows_cb(MenuLayer *menu_layer, uint16_t section_index, void *callback_context) {
-  SubscriptionMenu *menu = callback_context;
-  return menu->num_items;
-}
-
-static void prv_draw_row_cb(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
-  SubscriptionMenu *menu = callback_context;
-  SubscriptionItem *item = menu->items[cell_index->row];
-  menu_cell_basic_draw(ctx, cell_layer, item->name, item->network.name, NULL);
-}
-
 static void prv_handle_configure_required(SubscriptionMenu *menu) {
   Layer *window_layer = window_get_root_layer(menu->window);
   GRect frame = layer_get_frame(window_layer);
@@ -52,23 +121,58 @@ static void prv_handle_configure_required(SubscriptionMenu *menu) {
   layer_add_child(window_layer, text_layer_get_layer(text_layer));
 }
 
-static void prv_add_menu_layer(SubscriptionMenu *menu) {
+static void prv_select_click_handler(ClickRecognizerRef recognizer, void *context) {
+  SubscriptionMenu *menu = context;
+  GPoint offset = scroll_layer_get_content_offset(menu->scroll_layer);
+  for (uint16_t idx = 0; idx < menu->num_items; idx++) {
+    Layer *item_layer = menu->item_layers[idx];
+    const SubscriptionItem *item = menu->items[idx];
+    const GRect frame = layer_get_frame(item_layer);
+    if (frame.origin.y == offset.y) {
+      SubscriptionItemWindow *item_window = subscription_item_window_create(item);
+      subscription_item_window_push(item_window);
+      break;
+    }
+  }
+}
+
+static void prv_up_click_handler(ClickRecognizerRef recognizer, void *context) {
+  SubscriptionMenu *menu = context;
+  GRect bounds = layer_get_bounds(menu->item_layers[0]);
+  GPoint offset = scroll_layer_get_content_offset(menu->scroll_layer);
+  offset.y += bounds.size.h;
+
+  const bool animated = true;
+  scroll_layer_set_content_offset(menu->scroll_layer, offset, animated);
+}
+
+static void prv_down_click_handler(ClickRecognizerRef recognizer, void *context) {
+  SubscriptionMenu *menu = context;
+  GRect bounds = layer_get_bounds(menu->item_layers[0]);
+  GPoint offset = scroll_layer_get_content_offset(menu->scroll_layer);
+  offset.y -= bounds.size.h;
+
+  const bool animated = true;
+  scroll_layer_set_content_offset(menu->scroll_layer, offset, animated);
+}
+
+static void prv_click_config_provider(void *context) {
+  window_single_click_subscribe(BUTTON_ID_UP, prv_up_click_handler);
+  window_single_click_subscribe(BUTTON_ID_DOWN, prv_down_click_handler);
+  window_single_click_subscribe(BUTTON_ID_SELECT, prv_select_click_handler);
+}
+
+static void prv_add_scroll_layer(SubscriptionMenu *menu) {
   Layer *window_layer = window_get_root_layer(menu->window);
   GRect frame = layer_get_frame(window_layer);
+  ScrollLayer *scroll_layer = scroll_layer_create(frame);
 
-  MenuLayer *menu_layer = menu_layer_create(frame);
-  menu->menu_layer = menu_layer;
-  menu_layer_set_normal_colors(menu_layer, GColorWhite, GColorBlack);
-  menu_layer_set_highlight_colors(menu_layer, COLOR_FALLBACK(GColorVividCerulean, GColorBlack), GColorWhite);
-  menu_layer_pad_bottom_enable(menu_layer, false /* no padding */);
-  menu_layer_set_click_config_onto_window(menu_layer, menu->window);
-  menu_layer_set_callbacks(menu_layer, menu, (MenuLayerCallbacks){
-    .draw_row = prv_draw_row_cb,
-    .get_num_rows = prv_get_num_rows_cb,
-    .select_click = prv_select_click_cb
-  });
+  menu->scroll_layer = scroll_layer;
 
-  layer_add_child(window_layer, menu_layer_get_layer(menu_layer));
+  scroll_layer_set_shadow_hidden(scroll_layer, true /* no shadow */);
+
+  layer_add_child(window_layer, scroll_layer_get_layer(scroll_layer));
+  window_set_click_config_provider_with_context(menu->window, prv_click_config_provider, menu);
 }
 
 static void prv_window_load(Window *window) {
@@ -76,7 +180,7 @@ static void prv_window_load(Window *window) {
   if (menu->num_items == 0) {
     prv_handle_configure_required(menu);
   } else {
-    prv_add_menu_layer(menu);
+    prv_add_scroll_layer(menu);
   }
 }
 
@@ -130,10 +234,30 @@ void subscription_menu_add_item(SubscriptionMenu *menu, SubscriptionItem *item) 
     menu->text_layer = NULL;
   }
 
-  if (menu->menu_layer == NULL) {
-    prv_add_menu_layer(menu);
+  if (menu->scroll_layer == NULL) {
+    prv_add_scroll_layer(menu);
   }
-  menu_layer_reload_data(menu->menu_layer);
+
+  const uint16_t height = layer_get_bounds(window_get_root_layer(menu->window)).size.h;
+  const GRect frame = layer_get_frame(scroll_layer_get_layer(menu->scroll_layer));
+  const GRect item_frame = GRect(frame.origin.x, height * num_items, frame.size.w, height);
+
+  Layer *item_layer = layer_create_with_data(item_frame, sizeof(const SubscriptionMenu **));
+  menu->item_layers = realloc(menu->item_layers, sizeof(item_layer) * menu->num_items);
+  menu->item_layers[num_items] = item_layer;
+
+  const SubscriptionMenu **data = layer_get_data(item_layer);
+  *data = menu;
+
+  scroll_layer_add_child(menu->scroll_layer, item_layer);
+  scroll_layer_set_content_size(menu->scroll_layer, GSize(frame.size.w, height * menu->num_items));
+
+  layer_set_update_proc(item_layer, prv_item_layer_update_proc);
+
+  if (num_items) {
+    layer_mark_dirty(menu->item_layers[num_items - 1]);
+  }
+  layer_mark_dirty(item_layer);
 }
 
 void subscription_menu_push(SubscriptionMenu *menu) {
@@ -169,12 +293,19 @@ void subscription_menu_destroy(SubscriptionMenu *menu) {
     text_layer_destroy(menu->text_layer);
   }
 
-  if (menu->menu_layer) {
-    menu_layer_destroy(menu->menu_layer);
+  if (menu->scroll_layer) {
+    scroll_layer_destroy(menu->scroll_layer);
   }
 
   if (menu->window) {
     window_destroy(menu->window);
+  }
+
+  if (menu->item_layers) {
+    for (uint16_t idx = 0; idx < menu->num_items; idx++) {
+      layer_destroy(menu->item_layers[idx]);
+    }
+    free(menu->item_layers);
   }
 
   memset(menu, 0, sizeof(SubscriptionMenu));

@@ -73,3 +73,7 @@ build
 # Mac Extensions
 .lock
 .lock-*
+
+# Server files
+*.sock
+*.conf

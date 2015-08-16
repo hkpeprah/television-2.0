@@ -1,5 +1,7 @@
+#include "constants.h"
 #include "subscription_item_window.h"
 #include "subscription_menu.h"
+#include "utils.h"
 
 #include "debug/logging.h"
 
@@ -40,11 +42,11 @@ static void prv_item_layer_update_proc(Layer *layer, GContext *ctx) {
 
   GColor colour;
   if (item->crunchyroll) {
-    colour = GColorRajah;
+    colour = CRUNCHYROLL_COLOUR;
   } else if (item->funimation) {
-    colour = GColorFolly;
+    colour = FUNIMATION_COLOUR;
   } else {
-    colour = GColorVividCerulean;
+    colour = DEFAULT_COLOUR;
   }
 
   graphics_context_set_fill_color(ctx, colour);
@@ -57,7 +59,7 @@ static void prv_item_layer_update_proc(Layer *layer, GContext *ctx) {
     GRect(bounds.origin.x + padding, bounds.size.h / 2 - size.h - 4, bounds.size.w - 2 * padding, bounds.size.h);
 
   graphics_context_set_text_color(ctx, GColorWhite);
-  graphics_draw_text(ctx, item->name, font, text_bounds, GTextOverflowModeFill, GTextAlignmentRight, NULL);
+  graphics_draw_text(ctx, item->name, font, text_bounds, GTextOverflowModeWordWrap, GTextAlignmentRight, NULL);
 
   const uint16_t stroke_width = 2;
   graphics_context_set_stroke_color(ctx, GColorWhite);
@@ -128,7 +130,7 @@ static void prv_select_click_handler(ClickRecognizerRef recognizer, void *contex
     Layer *item_layer = menu->item_layers[idx];
     const SubscriptionItem *item = menu->items[idx];
     const GRect frame = layer_get_frame(item_layer);
-    if (frame.origin.y == offset.y) {
+    if (frame.origin.y == ABS(offset.y)) {
       SubscriptionItemWindow *item_window = subscription_item_window_create(item);
       subscription_item_window_push(item_window);
       break;
@@ -315,10 +317,6 @@ void subscription_menu_destroy(SubscriptionMenu *menu) {
 void subscription_item_destroy(SubscriptionItem *item) {
   if (!item) {
     return;
-  }
-
-  if (item->latest.summary) {
-    free(item->latest.summary);
   }
 
   memset(item, 0, sizeof(SubscriptionItem));

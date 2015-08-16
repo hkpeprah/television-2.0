@@ -4,19 +4,20 @@
 #include <stdint.h>
 
 #define MAX_NAME_LEN (40)
+#define MAX_SUMMARY_LEN (150)
 
 typedef struct {
   // The name of the episode
   char name[MAX_NAME_LEN + 1];
   // The summary of the episode
-  char *summary;
+  char summary[MAX_SUMMARY_LEN + 1];
   // The season the latest episode belongs to
   uint32_t season;
   // The number of this episode
   uint32_t number;
   // The timestamp for when this episode airs; seconds
   // since epoch.
-  uint32_t timestamp;
+  time_t timestamp;
   // The runtime of the episode
   uint32_t runtime;
 } Episode;

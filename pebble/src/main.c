@@ -330,10 +330,7 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
       }
       case AppKeyLatestSummary: {
         item->has_latest = true;
-        item->latest.summary = malloc(strlen(t->value->cstring) + 1);
-        if (item->latest.summary) {
-          strncpy(item->latest.summary, t->value->cstring, strlen(t->value->cstring));
-        }
+        strncpy(item->latest.summary, t->value->cstring, MIN(strlen(t->value->cstring), MAX_SUMMARY_LEN));
         break;
       }
       case AppKeyLatestSeason: {
@@ -373,6 +370,10 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
   }
 
   if (should_show_settings_menu) {
+    if (data->subscription_menu) {
+      subscription_menu_pop(data->subscription_menu);
+    }
+    data->subscription_menu = NULL;
     show_settings_menu(settings_data);
   }
 

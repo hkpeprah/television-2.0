@@ -1,3 +1,4 @@
+#include "subscription_item_window.h"
 #include "subscription_menu.h"
 
 #include "debug/logging.h"
@@ -8,12 +9,19 @@
 
 // Private API
 ////////////////////////////////////
-static uint16_t prv_get_num_rows(MenuLayer *menu_layer, uint16_t section_index, void *callback_context) {
+static void prv_select_click_cb(MenuLayer *menu_layer, MenuIndex *cell_index, void *callback_context) {
+  SubscriptionMenu *menu = callback_context;
+  SubscriptionItem *item = menu->items[cell_index->row];
+  SubscriptionItemWindow *window = subscription_item_window_create(item);
+  subscription_item_window_push(window);
+}
+
+static uint16_t prv_get_num_rows_cb(MenuLayer *menu_layer, uint16_t section_index, void *callback_context) {
   SubscriptionMenu *menu = callback_context;
   return menu->num_items;
 }
 
-static void prv_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
+static void prv_draw_row_cb(GContext *ctx, const Layer *cell_layer, MenuIndex *cell_index, void *callback_context) {
   SubscriptionMenu *menu = callback_context;
   SubscriptionItem *item = menu->items[cell_index->row];
   menu_cell_basic_draw(ctx, cell_layer, item->name, item->network.name, NULL);
@@ -55,8 +63,9 @@ static void prv_add_menu_layer(SubscriptionMenu *menu) {
   menu_layer_pad_bottom_enable(menu_layer, false /* no padding */);
   menu_layer_set_click_config_onto_window(menu_layer, menu->window);
   menu_layer_set_callbacks(menu_layer, menu, (MenuLayerCallbacks){
-    .draw_row = prv_draw_row,
-    .get_num_rows = prv_get_num_rows
+    .draw_row = prv_draw_row_cb,
+    .get_num_rows = prv_get_num_rows_cb,
+    .select_click = prv_select_click_cb
   });
 
   layer_add_child(window_layer, menu_layer_get_layer(menu_layer));

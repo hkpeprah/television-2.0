@@ -114,6 +114,12 @@ void subscription_menu_add_item(SubscriptionMenu *menu, SubscriptionItem *item) 
     return;
   }
 
+  if (strcmp(item->network.name, "Funimation") == 0) {
+    item->funimation = true;
+  } else if (strcmp(item->network.name, "Crunchyroll") == 0) {
+    item->crunchyroll = true;
+  }
+
   uint16_t num_items = menu->num_items;
   menu->num_items++;
   menu->items = realloc(menu->items, sizeof(SubscriptionItem *) * menu->num_items);

@@ -29,14 +29,16 @@ typedef struct {
 } Network;
 
 typedef struct {
-  union {
-    bool crunchyroll:1;
-    bool television:1;
-    bool funimation:1;
-    bool subscribed:1;
-    bool has_latest:1;
-    uint8_t flags;
-  };
+  // True if this is a Crunchyroll item
+  bool crunchyroll;
+  // True if this is a Television item
+  bool television;
+  // True if this is a Funimation item
+  bool funimation;
+  // True if the user is subscribed to this item
+  bool subscribed;
+  // True if this item has a latest episode
+  bool has_latest;
   // Latest episode
   Episode latest;
   // Network the series belongs to

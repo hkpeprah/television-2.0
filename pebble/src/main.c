@@ -1,5 +1,6 @@
 #include "settings_menu.h"
 #include "subscription_menu.h"
+#include "utils.h"
 
 #include "debug/logging.h"
 #include "message/message.h"
@@ -230,7 +231,6 @@ static void prv_window_unload(Window *window) {
   }
 
   progress_window_pop(data->progress_window);
-  subscription_menu_destroy(data->subscription_menu);
 
   memset(data, 0, sizeof(WindowData));
 
@@ -300,6 +300,11 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
         item->id = t->value->uint32;
         break;
       }
+      case AppKeyName: {
+        uint16_t len = strlen(t->value->cstring);
+        strncpy(item->name, t->value->cstring, MIN(len, MAX_NAME_LEN));
+        break;
+      }
       case AppKeySubscribed: {
         item->subscribed = (bool)t->value->uint8;
         break;
@@ -309,8 +314,8 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
         break;
       }
       case AppKeyNetworkName: {
-        item->network.name = malloc(strlen(t->value->cstring) + 1);
-        strncpy(item->network.name, t->value->cstring, strlen(t->value->cstring));
+        uint16_t len = strlen(t->value->cstring);
+        strncpy(item->network.name, t->value->cstring, MIN(len, MAX_NAME_LEN));
         break;
       }
       case AppKeyRuntime: {
@@ -318,15 +323,17 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
         break;
       }
       case AppKeyLatestName: {
+        uint16_t len = strlen(t->value->cstring);
         item->has_latest = true;
-        item->latest.name = malloc(strlen(t->value->cstring) + 1);
-        strncpy(item->latest.name, t->value->cstring, strlen(t->value->cstring));
+        strncpy(item->latest.name, t->value->cstring, MIN(len, MAX_NAME_LEN));
         break;
       }
       case AppKeyLatestSummary: {
         item->has_latest = true;
         item->latest.summary = malloc(strlen(t->value->cstring) + 1);
-        strncpy(item->latest.summary, t->value->cstring, strlen(t->value->cstring));
+        if (item->latest.summary) {
+          strncpy(item->latest.summary, t->value->cstring, strlen(t->value->cstring));
+        }
         break;
       }
       case AppKeyLatestSeason: {
@@ -352,6 +359,7 @@ static void prv_handle_app_message(DictionaryIterator *iter, bool success, void 
       case AppKeyError: {
         prv_show_error_window();
         subscription_menu_pop(data->subscription_menu);
+        data->subscription_menu = NULL;
         break;
       }
       case AppKeyDismiss: {

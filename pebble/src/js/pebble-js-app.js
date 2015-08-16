@@ -31,12 +31,12 @@ var APP_KEY_MAPPING = {
   'runtime': 11,
   'latest_name': 12,
   'latest_summary': 13,
-  'latest_season': 13,
-  'latest_number': 14,
-  'latest_timestamp': 15,
-  'latest_runtime': 16,
-  'error': 17,
-  'dismiss': 0
+  'latest_season': 14,
+  'latest_number': 15,
+  'latest_timestamp': 16,
+  'latest_runtime': 17,
+  'error': 18,
+  'dismiss': 19
 };
 
 var DISMISS = {
@@ -237,12 +237,36 @@ Api.prototype.getUserSettings = function(token) {
   });
 };
 
+Api.prototype.processItem = function(data) {
+  var item = {};
+  data = data || {};
+  if (data.network) {
+    item['network_id'] = data.network.id;
+    item['network_name'] = data.network.name;
+  }
+  if (data.latest) {
+    item['latest_name'] = data.latest.name;
+    item['latest_summary'] = data.latest.summary
+      .substring(0, Math.min(data.latest.summary.length, 150));
+    item['latest_season'] = data.latest.season || 0;
+    item['latest_number'] = data.latest.number || 0;
+    item['latest_timestamp'] = data.latest.timestamp;
+    item['latest_runtime'] = data.latest.runtime || 0;
+  }
+  item['subscribed'] = true;
+  item['id'] = data.id;
+  item['name'] = data.name;
+  item['runtime'] = data.runtime || 0;
+  return item;
+};
+
 Api.prototype.getUserSubscriptions = function(token) {
   token = token || userToken;
   if (!token) {
     mq.queue({ 'error': ERRORS.NO_TOKEN });
     return;
   }
+  var self = this;
   var url = urljoin(this.baseUrl, formatString(SUBSCRIPTIONS, { 'user_token' : token }));
   this.ajax(url, 'GET', null, function(res) {
     if (!(res && res.items)) {
@@ -250,7 +274,10 @@ Api.prototype.getUserSubscriptions = function(token) {
     } else if (res.items.length == 0) {
       mq.queue({ 'dismiss': DISMISS.NO_RESULTS });
     } else {
-      return;
+      for (var i = 0; i < res.items.length; i++) {
+        var msg = self.processItem(res.items[i]);
+        mq.queue(msg);
+      }
     }
   });
 };

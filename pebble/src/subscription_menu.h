@@ -3,6 +3,31 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#define MAX_NAME_LEN (40)
+
+typedef struct {
+  // The name of the episode
+  char name[MAX_NAME_LEN + 1];
+  // The summary of the episode
+  char *summary;
+  // The season the latest episode belongs to
+  uint32_t season;
+  // The number of this episode
+  uint32_t number;
+  // The timestamp for when this episode airs; seconds
+  // since epoch.
+  uint32_t timestamp;
+  // The runtime of the episode
+  uint32_t runtime;
+} Episode;
+
+typedef struct {
+  // The identifier of the network this item belongs to
+  uint32_t id;
+  // The name of the network (or producer) of this item
+  char name[MAX_NAME_LEN + 1];
+} Network;
+
 typedef struct {
   union {
     bool crunchyroll:1;
@@ -12,31 +37,14 @@ typedef struct {
     bool has_latest:1;
     uint8_t flags;
   };
-  struct {
-    // The name of the episode
-    char *name;
-    // The summary of the episode
-    char *summary;
-    // The season the latest episode belongs to
-    uint32_t season;
-    // The number of this episode
-    uint32_t number;
-    // The timestamp for when this episode airs; seconds
-    // since epoch.
-    uint32_t timestamp;
-    // The runtime of the episode
-    uint32_t runtime;
-  } latest;
-  struct {
-    // The identifier of the network this item belongs to
-    uint32_t id;
-    // The name of the network (or producer) of this item
-    char *name;
-  } network;
+  // Latest episode
+  Episode latest;
+  // Network the series belongs to
+  Network network;
   // The identifier of the series/movie
   uint32_t id;
   // The name of the series/movie.
-  char *name;
+  char name[MAX_NAME_LEN + 1];
   // The runtime of this item in minutes
   uint32_t runtime;
 } SubscriptionItem;
@@ -45,6 +53,7 @@ typedef struct {
   Window *window;
 
   TextLayer *text_layer;
+  MenuLayer *menu_layer;
 
   SubscriptionItem **items;
   uint16_t num_items;

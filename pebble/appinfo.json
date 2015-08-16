@@ -33,12 +33,12 @@
     "runtime": 11,
     "latest_name": 12,
     "latest_summary": 13,
-    "latest_season": 13,
-    "latest_number": 14,
-    "latest_timestamp": 15,
-    "latest_runtime": 16,
-    "error": 17,
-    "dismiss": 18
+    "latest_season": 14,
+    "latest_number": 15,
+    "latest_timestamp": 16,
+    "latest_runtime": 17,
+    "error": 18,
+    "dismiss": 19
   },
   "resources": {
     "media": [

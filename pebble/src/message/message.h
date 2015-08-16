@@ -13,6 +13,7 @@ typedef enum {
   AppKeySubscriptionCount, // uint32
   // Item Keys
   AppKeyId,                // uint32
+  AppKeyName,              // cstring
   AppKeySubscribed,        // boolean
   AppKeyNetworkId,         // uint32
   AppKeyNetworkName,       // cstring

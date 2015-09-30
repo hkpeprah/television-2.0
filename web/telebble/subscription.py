@@ -14,7 +14,7 @@ def subscribe(user, topics):
     series = models.Series.objects(_id__in=topics)
     ids = map(lambda s: s._id, series)
     for series in series:
-        topic = str(series._id)
+        topic = series.topic
         if utils.is_crunchyroll_source(series):
             topic += '-%s' % ('premium' if user.crunchyroll_premium else 'free')
         elif utils.is_funimation_source(series):
@@ -32,7 +32,7 @@ def subscribe(user, topics):
 
 def unsubscribe(user, topics):
     series = models.Series.objects(_id__in=topics)
-    ids = map(lambda s: s._id, series)
+    ids = map(lambda s: s.topic, series)
     for (topic, series) in zip(ids, series):
         status, result = api.unsubscribe(user.token, topic)
         if not status:

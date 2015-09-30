@@ -2,7 +2,8 @@
 
 // Constants
 ////////////////////////////
-var CONFIG_ROOT = 'http://410388.ngrok.com';
+var HTTP_CONFIG_ROOT = 'http://television.hkpeprah.com';
+var CONFIG_ROOT = HTTP_CONFIG_ROOT;
 var CONFIG_ENDPOINT = '/pebble';
 
 var API_ROOT = CONFIG_ROOT + '/api';
@@ -181,7 +182,9 @@ MessageQueue.prototype.send = function() {
 };
 
 MessageQueue.prototype.queue = function(data, successHandler, errorHandler) {
-  data = data || {};
+  if (typeof data === 'undefined') {
+    data = {};
+  }
   successHandler = successHandler || function() {};
   errorHandler = errorHandler || successHandler;
   this._queue.push({ 'obj': data, 'success': successHandler, 'error': errorHandler });
@@ -202,7 +205,7 @@ Api.prototype.ajax = function (url, method, data, success, error) {
   var xhr = new XMLHttpRequest();
   success = success || function() {};
   error = error || function() {
-    mq.queue({ 'error': ERRORS.UKNOWN });
+    mq.queue({ 'error': ERRORS.UNKNOWN });
   };
   xhr.open(method, url, true);
   xhr.onload = function() {
@@ -211,6 +214,7 @@ Api.prototype.ajax = function (url, method, data, success, error) {
       success(res);
     } catch (e) {
       console.log('Error in ajax request: ' + e);
+      console.log(xhr.responseText);
       error(e, xhr.responseText);
     }
   };

@@ -6,6 +6,8 @@ import sources
 import utils
 
 
+__version__ = '0.01'
+
 class Serializable(object):
     """
     Inherited from a subclass to provide it with a .json method for serialization
@@ -112,6 +114,11 @@ class Series(Serializable, Document):
 
     # Extra data
     extra_data = fields.DictField(default={})
+
+    @property
+    def topic(self):
+        prefix = '{}-'.format(__version__)
+        return prefix + str(self._id)
 
     @property
     def country(self):

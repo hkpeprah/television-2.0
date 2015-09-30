@@ -29,6 +29,8 @@ typedef struct {
   SubscriptionMenu *subscription_menu;
 } WindowData;
 
+static bool s_error_window_present = false;
+
 // Error Window
 //////////////////////////
 static void prv_error_window_load(Window *window) {
@@ -54,6 +56,8 @@ static void prv_error_window_load(Window *window) {
   layer_set_frame(text_layer_get_layer(text_layer), text_frame);
 
   layer_add_child(window_layer, text_layer_get_layer(text_layer));
+
+  s_error_window_present = true;
 }
 
 static void prv_error_window_unload(Window *window) {
@@ -61,6 +65,7 @@ static void prv_error_window_unload(Window *window) {
   if (text_layer) {
     text_layer_destroy(text_layer);
   }
+  s_error_window_present = false;
   window_destroy(window);
 }
 
@@ -242,11 +247,15 @@ static void prv_window_unload(Window *window) {
 // Private API
 //////////////////////////
 static void prv_handle_app_message(DictionaryIterator *iter, bool success, void *context) {
-  if (!success) {
+  if (!success || s_error_window_present) {
     return;
   }
+
   WindowData *data = context;
   Tuple *t = dict_read_first(iter);
+  if (t == NULL) {
+    return;
+  }
 
   SubscriptionItem *item = malloc(sizeof(SubscriptionItem));
   memset(item, 0, sizeof(SubscriptionItem));

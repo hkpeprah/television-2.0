@@ -6,6 +6,7 @@ from flask_restful import Api, Resource, reqparse
 from telebble.fetch import search_from_television
 from telebble.models import Network, Series, Media, User
 from telebble.subscription import subscribe, unsubscribe
+from telebble.utils import generate_key
 
 
 app = Flask(__name__)
@@ -58,6 +59,8 @@ class NetworkResource(BaseResource):
         return super(NetworkResource, self).get(Network, singleton, **kwargs)
 
 class SeriesResource(BaseResource):
+    THRESHOLD = 3
+
     def get(self, series_id=None, network_id=None, user_token=None, **kwargs):
         singleton = False
         limit_results = True
@@ -76,7 +79,7 @@ class SeriesResource(BaseResource):
 
         query = request.args.get('q', None)
         data = super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
-        if query is not None and data['count'] == 0:
+        if query is not None and data['count'] <= self.THRESHOLD:
             search_from_television(query, limit=self.SEARCH_LIMIT)
             return super(SeriesResource, self).get(Series, singleton, limit_results, **kwargs)
         return data
@@ -129,13 +132,6 @@ class UserResource(BaseResource):
         user.save()
         return { 'status': 'Ok' }
 
-def register_api_resource(resource, *paths):
-    _paths = []
-    for path in paths:
-        frags = ['api', version, path]
-        _paths.append('/%s' % '/'.join(map(lambda x: x.strip('/'), frags)))
-    api.add_resource(resource, *_paths)
-
 @app.route('/pebble')
 def pebble_configuration():
     return render_template('pebble.html')
@@ -146,6 +142,13 @@ def pebble_configuration():
 @app.errorhandler(503)
 def error_handler(error):
     return render_template('error.html', error=error)
+
+def register_api_resource(resource, *paths):
+    _paths = []
+    for path in paths:
+        frags = ['api', version, path]
+        _paths.append('/%s' % '/'.join(map(lambda x: x.strip('/'), frags)))
+    api.add_resource(resource, *_paths)
 
 register_api_resource(NetworkResource, '/networks', '/networks/<int:network_id>')
 register_api_resource(SeriesResource, '/series', '/series/<int:series_id>',
@@ -162,6 +165,8 @@ if __name__ == '__main__':
         'db': db.DATABASE_NAME,
         'alias': db.DATABASE_ALIAS
     }
+
+    app.secret_key = generate_key()
 
     mongoengine.connect(db.DATABASE_NAME,
         alias=db.DATABASE_ALIAS)

@@ -1,6 +1,8 @@
 import re
 import json
 import logging
+import random
+import string
 
 import pytz
 import datetime
@@ -11,6 +13,12 @@ import constants
 import sources
 import timeline
 
+
+def generate_key():
+    """
+    Generate a random string.
+    """
+    return ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(N))
 
 def is_crunchyroll_source(series):
     return series.source_type == sources.CRUNCHYROLL_SOURCE
@@ -53,12 +61,17 @@ def normalize_description(description):
     sentences = re.split('\.[\s$]', description)
     pieces = []
     description_length = 0
-    max_length = 600
+    max_length = 300
     for sentence in sentences:
         description_length += len(sentence)
         if description_length >= max_length:
             break
         pieces.append(sentence)
+
+    if len(pieces) == 0:
+        if len(description) == 0:
+            return 'No Description'
+        return description[0:max_length]
     return '. '.join(pieces)
 
 def create_generic_pin(media):
@@ -192,7 +205,7 @@ def send_pin(media):
         return False
 
     pin = create_pin_for_media_object(media)
-    topic = str(media.series._id)
+    topic = str(media.series.topic)
     if is_crunchyroll_source(media):
         # We have to send a pin for both for the free and premium versions
         # of this data source, so we'll send the free one here as a copy.

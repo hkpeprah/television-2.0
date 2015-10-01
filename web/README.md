@@ -19,6 +19,16 @@ will start the server and the worker.  To run the worker by itself, run
 `telepebble`.
 
 
+## Deploying a Server
+1.  Set up a 'DNS' record (usually a 'CNAME') for the application to connect through.
+2.  Install ['gunicorn'](http://gunicorn.org/) and ['supervisord'](http://supervisord.org/).
+3.  Copy the template configuration file to '/etc/supervisor/conf.d/telebble.conf'.
+4.  Update the configuration file with the correct path and API keys.
+5.  Update your APACHE or NGINX configuration to point to the application (add an entry).
+6.  `reread` and `update` gunicorn, then `start telebble`.
+7.  Enjoy!
+
+
 ## Endpoints
 
 | Endpoint                           | Description                                                                        |

@@ -21,6 +21,7 @@ def main():
         now += datetime.timedelta(days=1)
 
     logging.debug('Worker: Finished initialization.')
+
     while True:
         logging.debug('Worker: Fetching new data.')
         telebble.fetch.fetch_from_television(now.year, now.month, now.day)

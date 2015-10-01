@@ -1,7 +1,7 @@
 import os
 import sys
 import logging
-import multiprocessing
+import threading
 
 import mongoengine
 
@@ -10,31 +10,36 @@ import db
 import worker
 
 
+app.config['MONGODB_SETTINGS'] = {
+    'db': db.DATABASE_NAME,
+    'alias': db.DATABASE_ALIAS
+}
+
+@app.before_first_request
+def setup_application():
+    mongoengine.connect(db.DATABASE_NAME, alias=db.DATABASE_ALIAS)
+
+def build_application():
+    """
+    Starts running the Flask application.
+    """
+    logging.basicConfig(level=logging.DEBUG,
+                        stream=sys.stderr,
+                        format='%(asctime)s %(levelname)s - %(message)s')
+
+    t = threading.Thread(target=worker.main)
+    t.setDaemon(True)
+    t.start()
+
+    if os.environ.get('WSGI_PRODUCTION', None) is not None:
+        app.config['PORT'] = 9000
+    else:
+        app.config['PORT'] = 5000
+        app.config['DEBUG'] = True
+
+    return app
+
 if __name__ == '__main__':
-    app.config['MONGODB_SETTINGS'] = {
-        'db': db.DATABASE_NAME,
-        'alias': db.DATABASE_ALIAS
-    }
-
-    mongoengine.connect(db.DATABASE_NAME,
-        alias=db.DATABASE_ALIAS)
-
-    log_config = { 'level': logging.DEBUG }
-    if len(sys.argv) > 1:
-        filename = sys.argv[1]
-        log_config['filemode'] = 'w'
-        log_config['filename'] = filename
-
-    logging.basicConfig(**log_config)
-
-    # Start the Worker as a Daemon
-    p = multiprocessing.Process(target=worker.main)
-    p.daemon = True
-    p.start()
-
-    # Start the server as a separate process, but block
-    environment = os.environ.get('WSGI_PRODUCTION', None)
-    debug = True if environment is not None else False
-    p = multiprocessing.Process(target=app.run, kwargs={'debug': debug})
-    p.start()
-    p.join()
+    app = build_application()
+    app.run(debug=app.config.get('DEBUG', False),
+            port=app.config.get('PORT', 9000))

@@ -1,4 +1,9 @@
 [program:telebble]
-command = /Envs/telebble/bin/gunicorn wsgi --env PEBBLE_TIMELINE_API_KEY= -b localhost:8000 --error-logfile /tmp/telebble.error.log --log-file /tmp/telebble.log.log --log-level debug
-directory = /www/telebble
+environment = PEBBLE_TIMELINE_API_KEY=
+command = /Envs/telebble/bin/gunicorn 'wsgi:build_application()' -b localhost:8000
+stdout_logfile = /tmp/telebble.out.log
+stderr_logfile = /tmp/telebble.error.log
+logfile = /tmp/telebble.log
+loglevel = info
+directory = /www/television-2.0/web
 user = www-data
